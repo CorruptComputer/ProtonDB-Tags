@@ -7,7 +7,7 @@ import urllib.request
 import json
 
 ## Change this to match your system
-sharedconfig = "/home/[user]]/.steam/steam/userdata/[UserID]]/7/remote/sharedconfig.vdf"
+sharedconfig = "/home/[user]/.steam/steam/userdata/[UserID]/7/remote/sharedconfig.vdf"
 
 if (path.exists(sharedconfig) != True):
     print("Please edit the top of this file to include your steam path!")
