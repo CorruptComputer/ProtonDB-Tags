@@ -24,8 +24,7 @@ for appid in data["UserLocalConfigStore"]["Software"]["Valve"]["Steam"]["Apps"]:
 
         data["UserLocalConfigStore"]["Software"]["Valve"]["Steam"]["Apps"][str(appid)]["tags"] = vdf.VDFDict()
         data["UserLocalConfigStore"]["Software"]["Valve"]["Steam"]["Apps"][str(appid)]["tags"]["0"] = protondb
-        vdf.dump(data, open(sharedconfig,'w'), pretty=True)
-
+        
     except ValueError:
         continue
     
