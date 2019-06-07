@@ -1,6 +1,9 @@
 # ProtonDB to Steam Library
 
-This is just a small python script I made to pull ratings from ProtonDB and import them into your Steam library as tags. 
+This is just a small python script I made to pull ratings from ProtonDB and import them into your Steam library as tags.
+
+Here is a screenshot which shows how it looks once ran:
+![Screenshot](screenshot.png)
 
 ### Dependencies
 

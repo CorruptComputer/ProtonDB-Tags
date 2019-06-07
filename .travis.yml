@@ -1,0 +1,13 @@
+dist: xenial   # required for Python >= 3.7
+language: python
+cache: pip
+python: "3.7"
+
+install: 
+  - pip --disable-pip-version-check install vdf pylint
+
+script: 
+  - pylint ProtonDB-to-Steam-Library.py
+  - python ProtonDB-to-Steam-Library.py -s ./travis-tests/test01.vdf -n
+  - python ProtonDB-to-Steam-Library.py -s ./travis-tests/test02.vdf -n
+  - python ProtonDB-to-Steam-Library.py -s ./travis-tests/test03.vdf -n

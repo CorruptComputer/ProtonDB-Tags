@@ -1,0 +1,19 @@
+"UserRoamingConfigStore"
+{
+	"Software"
+	{
+		"Valve"
+		{
+			"Steam"
+			{
+				"Apps"
+				{
+					"428750"
+					{
+						"cloudenabled"		"1"
+					}
+				}
+			}
+		}
+	}
+}
