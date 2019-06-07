@@ -12,7 +12,7 @@ You'll need to edit the file and add your Steam install path and UserID to here:
 sharedconfig = "/home/[user]/.steam/steam/userdata/[userID]/7/remote/sharedconfig.vdf"
 ```
 
-Once that is set you can just run with: `python ProtonDB-to-Steam-Library.py`
+Once that is set you'll want to close Steam and run with: `python ProtonDB-to-Steam-Library.py`
 
 ### Made with:
 
