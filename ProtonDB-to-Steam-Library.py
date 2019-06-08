@@ -86,32 +86,31 @@ def main(argv):
         sharedconfig = os.path.join(basepath, possibleIDs[int(user)], "7/remote/sharedconfig.vdf") 
 
     print("Selected: " + sharedconfig)        
-    DATA = vdf.load(open(sharedconfig))
+    data = vdf.load(open(sharedconfig))
 
     configstore = "UserLocalConfigStore"
 
     try:
-        DATA[configstore]
+        data[configstore]
 
     except KeyError:
         configstore = "UserRoamingConfigStore"
         try:
-            DATA[configstore]
+            data[configstore]
         except KeyError:
             print("Could not load sharedconfig.vdf. Please submit an issue on GitHub and attach your sharedconfig.vdf!")
             sys.exit()
 
-    APPS = DATA[configstore]["Software"]["Valve"]["Steam"]["Apps"]
 
-    for appid in APPS:
+    for appid in data[configstore]["Software"]["Valve"]["Steam"]["Apps"]:
         try:
             appid = int(appid)
             protondb = json.load(urllib.request.urlopen("https://www.protondb.com/api/v1/reports/summaries/" + str(appid) + ".json"))["trendingTier"]
 
             print(str(appid) + " " + protondb)
 
-            APPS[str(appid)]["tags"] = vdf.VDFDict()
-            APPS[str(appid)]["tags"]["0"] = "ProtonDB Ranking: " + protondb
+            data[configstore]["Software"]["Valve"]["Steam"]["Apps"][str(appid)]["tags"] = vdf.VDFDict()
+            data[configstore]["Software"]["Valve"]["Steam"]["Apps"][str(appid)]["tags"]["0"] = "ProtonDB Ranking: " + protondb
             
         except ValueError:
             continue
@@ -127,7 +126,7 @@ def main(argv):
             save = False
 
     if (save):
-        vdf.dump(DATA, open(sharedconfig, 'w'), pretty=True)
+        vdf.dump(data, open(sharedconfig, 'w'), pretty=True)
 
 if __name__ == "__main__":
     main(sys.argv[1:])
