@@ -1,0 +1,24 @@
+"UserRoamingConfigStore"
+{
+	"Software"
+	{
+		"Valve"
+		{
+			"Steam"
+			{
+				"Apps"
+				{
+					"440"
+					{
+						"cloudenabled" "1"
+						"tags"
+						{
+							"0" "ProtonDB Ranking: borked"
+							"1" "ProtonDB Ranking: gold"
+						}
+					}
+				}
+			}
+		}
+	}
+}

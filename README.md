@@ -35,7 +35,7 @@ If you are finding that only some of your Proton compatible games are being cate
 
 1. Select all of the games in your library
 2. Right click -> Set Categories...
-3. Add some random category to them all (will be removed)
+3. Add some random category to them all (you can remove this later)
 4. Close Steam to force it to write all of your games to the sharedconfig.vdf file
 5. Try running the script again
 

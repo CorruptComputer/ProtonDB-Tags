@@ -8,7 +8,8 @@ install:
 
 script: 
                                         # I would like to eventually reduce the number of disabled checks here, but this is to get TravisCI to pass the build.
-  - pylint ProtonDB-to-Steam-Library.py --disable=line-too-long,bare-except,too-many-branches,too-many-statements,too-many-locals,invalid-name,missing-docstring
+  - pylint ProtonDB-to-Steam-Library.py --disable=line-too-long,bare-except,too-many-branches,too-many-statements,too-many-locals,invalid-name,missing-docstring,too-many-nested-blocks
   - python ProtonDB-to-Steam-Library.py -s ./travis-tests/test01.vdf -n
   - python ProtonDB-to-Steam-Library.py -s ./travis-tests/test02.vdf -n
   - python ProtonDB-to-Steam-Library.py -s ./travis-tests/test03.vdf -n
+  - python ProtonDB-to-Steam-Library.py -s ./travis-tests/test04.vdf -n
