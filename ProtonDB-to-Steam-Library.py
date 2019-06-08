@@ -4,6 +4,7 @@ import os, sys, json, urllib.request, vdf, getopt
 
 def main(argv):
     sharedconfig = ""
+    skipsave = False
 
     try:
         opts, _ = getopt.getopt(argv, "hs:n")
