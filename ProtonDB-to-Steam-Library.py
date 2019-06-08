@@ -1,8 +1,16 @@
 #!/usr/bin/python3
 
-import os, sys, json, urllib.request, vdf, getopt
+import os
+import sys
+import json
+import urllib.request
+import getopt
+import vdf
 
 def main(argv):
+    usage = "Usage: ProtonDB-to-Steam-Library.py \n" \
+          + "        -s <absolute path to sharedconfig.vdf> \n" \
+          + "        -n (disables saving)"
     sharedconfig = ""
     skipsave = False
 
@@ -10,49 +18,48 @@ def main(argv):
         opts, _ = getopt.getopt(argv, "hs:n")
 
     except getopt.GetoptError:
-        print("ProtonDB-to-Steam-Library.py [-s <absolute path to sharedconfig.vdf>] [-n (disable saving)]")
+        print(usage)
         sys.exit()
 
     for opt, arg in opts:
-        if opt == '-h':
-            print("ProtonDB-to-Steam-Library.py [-s <absolute path to sharedconfig.vdf>] [-n (disable saving)]")
+        if opt == "-h":
+            print(usage)
             sys.exit()
 
-        elif opt in ("-s"):
-            if (os.path.exists(arg)):
+        elif opt in "-s":
+            if os.path.exists(arg):
                 try:
                     vdf.load(open(arg))
                     sharedconfig = arg
                 except:
                     print(arg)
-                    print("Invalid path! 1")
+                    print("Invalid path!")
                     sys.exit()
 
             ## With ~ for user home
-            elif (os.path.exists(os.path.expanduser(arg))):
+            elif os.path.exists(os.path.expanduser(arg)):
                 try:
                     vdf.load(open(arg))
                     sharedconfig = os.path.expanduser(arg)
 
                 except:
                     print(os.path.expanduser(arg))
-                    print("Invalid path! 2")
+                    print("Invalid path!")
                     sys.exit()
 
             else:
                 print(arg)
-                print("Invalid path! 4")
+                print("Invalid path!")
                 sys.exit()
 
-        elif opt in ("-n"):
+        elif opt in "-n":
             skipsave = True
 
 
-    if (not sharedconfig):
-        paths = ['~/.local/share/Steam/userdata',
-                 '~/.steam/steam/userdata',
-                 # Not sure if I really would like to support this one long term as running Steam as root seems strange
-                 '~/.steam/root/userdata']
+    if not sharedconfig:
+        paths = ["~/.local/share/Steam/userdata",
+                 "~/.steam/steam/userdata",
+                 "~/.steam/root/userdata"]
 
         basepath = ""
 
@@ -78,14 +85,14 @@ def main(argv):
                 possibleIDs.append(userID)
 
         user = 0
-        if (len(possibleIDs) == 1):
+        if len(possibleIDs) == 1:
             print("Only one user found.")
             user = 0
         else:
             user = input("Which user number would you like to open? ")
-        sharedconfig = os.path.join(basepath, possibleIDs[int(user)], "7/remote/sharedconfig.vdf") 
+        sharedconfig = os.path.join(basepath, possibleIDs[int(user)], "7/remote/sharedconfig.vdf")
 
-    print("Selected: " + sharedconfig)        
+    print("Selected: " + sharedconfig)
     data = vdf.load(open(sharedconfig))
 
     configstore = "UserLocalConfigStore"
@@ -105,22 +112,24 @@ def main(argv):
     for appid in data[configstore]["Software"]["Valve"]["Steam"]["Apps"]:
         try:
             appid = int(appid)
-            protondb = json.load(urllib.request.urlopen("https://www.protondb.com/api/v1/reports/summaries/" + str(appid) + ".json"))["trendingTier"]
+            protondb = json.load( \
+                urllib.request.urlopen("https://www.protondb.com/api/v1/reports/summaries/" + str(appid) + ".json"))["trendingTier"]
 
             print(str(appid) + " " + protondb)
 
             data[configstore]["Software"]["Valve"]["Steam"]["Apps"][str(appid)]["tags"] = vdf.VDFDict()
             data[configstore]["Software"]["Valve"]["Steam"]["Apps"][str(appid)]["tags"]["0"] = "ProtonDB Ranking: " + protondb
-            
+
         except ValueError:
             continue
-        
+
         except urllib.error.HTTPError:
             continue
 
-    if (not skipsave):
+    if not skipsave:
+        print("WARNING: This may clear your current tags on Steam!")
         check = input("Would you like to save sharedconfig.vdf? (y/N)")
-        if (check.lower() in ("yes","y")):
+        if check.lower() in ("yes", "y"):
             vdf.dump(data, open(sharedconfig, 'w'), pretty=True)
 
 if __name__ == "__main__":
