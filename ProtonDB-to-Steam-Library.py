@@ -4,7 +4,6 @@ import os, sys, json, urllib.request, vdf, getopt
 
 def main(argv):
     sharedconfig = ""
-    save = None
 
     try:
         opts, _ = getopt.getopt(argv, "hs:n")
@@ -45,7 +44,7 @@ def main(argv):
                 sys.exit()
 
         elif opt in ("-n"):
-            save = False
+            skipsave = True
 
 
     if (not sharedconfig):
@@ -118,15 +117,10 @@ def main(argv):
         except urllib.error.HTTPError:
             continue
 
-    if (not save):
+    if (not skipsave):
         check = input("Would you like to save sharedconfig.vdf? (y/N)")
         if (check.lower() in ("yes","y")):
-            save = True
-        else:
-            save = False
-
-    if (save):
-        vdf.dump(data, open(sharedconfig, 'w'), pretty=True)
+            vdf.dump(data, open(sharedconfig, 'w'), pretty=True)
 
 if __name__ == "__main__":
     main(sys.argv[1:])
