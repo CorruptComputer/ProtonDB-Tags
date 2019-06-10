@@ -8,6 +8,8 @@ Here is a screenshot which shows how it looks once ran:
 
 ### Dependencies
 
+This script requires Python 3, you can check your python version with `python --version`. If your default is Python 2 then you'll need to check with your distro's documentation and install Python 3, then replace all of the below commands with `python3` and `pip3`.
+
 You'll need to install [vdf](https://github.com/ValvePython/vdf) before this can run. 
 You can install it via pip with: 
 ```bash
