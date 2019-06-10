@@ -40,6 +40,17 @@ def get_configstore_for_vdf(sharedconfig):
 
     return configstore
 
+# Get the correct apps key.
+def get_apps_key(sharedconfig, configstore):
+    possibleKeys = ["apps", "Apps"]
+    for key in possibleKeys:
+        if key in sharedconfig[configstore]["Software"]["Valve"]["Steam"]:
+            apps = key
+            return apps
+    print('Could not find the apps. Try adding everything to a category before running.')
+    sys.exit()
+
+
 # Pulls the games ranking from ProtonDB and returns the Teir as a string
 def get_protondb_rating(app_id):
     protondb_json = json.load(urllib.request.urlopen("https://www.protondb.com/api/v1/reports/summaries/" + str(app_id) + ".json"))
@@ -144,7 +155,9 @@ def main(argv):
     # Get which version of the configstore you have
     configstore = get_configstore_for_vdf(sharedconfig)
 
-    for app_id in sharedconfig[configstore]["Software"]["Valve"]["Steam"]["Apps"]:
+    apps = get_apps_key(sharedconfig, configstore)
+
+    for app_id in sharedconfig[configstore]["Software"]["Valve"]["Steam"][apps]:
         try:
             # This has to be here because some Steam AppID's are strings of text, which ProtonDB does not support. Check test01.vdf line 278 for an example.
             app_id = int(app_id)
@@ -157,22 +170,22 @@ def main(argv):
 
             try:
                 # Have to create a copy to avoid: "RuntimeError: dictionary changed size during iteration"
-                tags = sharedconfig[configstore]["Software"]["Valve"]["Steam"]["Apps"][str(app_id)]["tags"].copy()
+                tags = sharedconfig[configstore]["Software"]["Valve"]["Steam"][apps][str(app_id)]["tags"].copy()
                 for tag in tags:
                     # Search to see if a ProtonDB rank is already a tag, if so just overwrite that tag
-                    if sharedconfig[configstore]["Software"]["Valve"]["Steam"]["Apps"][str(app_id)]["tags"][tag].startswith("ProtonDB Ranking:", 0, 17):
+                    if sharedconfig[configstore]["Software"]["Valve"]["Steam"][apps][str(app_id)]["tags"][tag].startswith("ProtonDB Ranking:", 0, 17):
                         if not tag_num:
                             tag_num = tag
                         else:
                             # Delete dupe tags caused by error of previous versions, may remove this check in the future once its no longer an issue
-                            del sharedconfig[configstore]["Software"]["Valve"]["Steam"]["Apps"][str(app_id)]["tags"][tag]
+                            del sharedconfig[configstore]["Software"]["Valve"]["Steam"][apps][str(app_id)]["tags"][tag]
                 if not tag_num:
                     # If no ProtonDB tags were found, use the next available number
-                    tag_num = str(len(sharedconfig[configstore]["Software"]["Valve"]["Steam"]["Apps"][str(app_id)]["tags"]))
+                    tag_num = str(len(sharedconfig[configstore]["Software"]["Valve"]["Steam"][apps][str(app_id)]["tags"]))
             # If the tags key wasn't found, that means there are no tags for the game
             except KeyError:
                 tag_num = "0"
-                sharedconfig[configstore]["Software"]["Valve"]["Steam"]["Apps"][str(app_id)]["tags"] = vdf.VDFDict()
+                sharedconfig[configstore]["Software"]["Valve"]["Steam"][apps][str(app_id)]["tags"] = vdf.VDFDict()
 
             protondb_rating = get_protondb_rating(app_id)
             print(str(app_id) + " " + protondb_rating)
@@ -190,7 +203,7 @@ def main(argv):
 
             # Try to inject the tag into the vdfDict, if the returned rating from ProtonDB isn't a key above it will error out
             try:
-                sharedconfig[configstore]["Software"]["Valve"]["Steam"]["Apps"][str(app_id)]["tags"][tag_num] = possible_ranks[protondb_rating]
+                sharedconfig[configstore]["Software"]["Valve"]["Steam"][apps][str(app_id)]["tags"][tag_num] = possible_ranks[protondb_rating]
             except KeyError:
                 print("Unknown ProtonDB rating: " + protondb_rating + "\n Please report this on GitHub!")
 
