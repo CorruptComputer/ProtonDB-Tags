@@ -11,7 +11,10 @@ import vdf
 def is_native(app_id):
     try:
         # Thanks to u/FurbyOnSteroid for finding this! https://www.reddit.com/r/linux_gaming/comments/bxqsvs/protondb_to_steam_library_tool/eqal68r/
-        steam_api_result = json.load(urllib.request.urlopen("https://store.steampowered.com/api/appdetails?appids=" + app_id + "&filters=platforms"))
+        req = urllib.request.urlopen("https://store.steampowered.com/api/appdetails?appids=" + app_id + "&filters=platforms")
+        data = req.read()
+        enc = req.info().get_content_charset('utf-8')
+        steam_api_result = json.loads(str(data.decode(enc)))
 
         # If steam can't find the game it will be False
         if steam_api_result[app_id]["success"] in ["True", "true", True]:
@@ -42,7 +45,10 @@ def get_configstore_for_vdf(sharedconfig):
 
 # Pulls the games ranking from ProtonDB and returns the Teir as a string
 def get_protondb_rating(app_id):
-    protondb_json = json.load(urllib.request.urlopen("https://www.protondb.com/api/v1/reports/summaries/" + str(app_id) + ".json"))
+    req = urllib.request.urlopen("https://www.protondb.com/api/v1/reports/summaries/" + str(app_id) + ".json")
+    data = req.read()
+    enc = req.info().get_content_charset('utf-8')
+    protondb_json = json.loads(str(data.decode(enc)))
     return protondb_json["trendingTier"]
 
 # Trys to find the path to your localconfig.vdf, these are the most common Steam install locations
