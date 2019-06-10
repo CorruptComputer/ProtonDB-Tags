@@ -1,4 +1,4 @@
-# ProtonDB to Steam Library [![Build Status](https://travis-ci.com/CorruptComputer/ProtonDB-to-Steam-Library.svg?branch=master)](https://travis-ci.com/CorruptComputer/ProtonDB-to-Steam-Library)[<img src="https://discordapp.com/assets/f8389ca1a741a115313bede9ac02e2c0.svg" width="45" height="45" alt="ProtonDB Discord" title="ProtonDB Discord">](https://discord.gg/uuwK9EV)
+# ProtonDB to Steam Library [![Build Status](https://travis-ci.com/CorruptComputer/ProtonDB-to-Steam-Library.svg?branch=master)](https://travis-ci.com/CorruptComputer/ProtonDB-to-Steam-Library)[<img src="https://discordapp.com/assets/f8389ca1a741a115313bede9ac02e2c0.svg" width="45" height="45" alt="ProtonDB to Steam Library Discord" title="ProtonDB to Steam Library Discord">](https://discord.gg/mt3KYmE)
 
 This is just a small python script to pull ratings from ProtonDB and import them into your Steam library as tags.
 
@@ -57,5 +57,4 @@ If you are finding that only some of your Proton compatible games are being cate
 
 Please keep in mind that Linux Native games shouldn't be categorized.
 
-If anything is still not working you can open an issue here, or join the ProtonDB Discord server (link is at the top of this README).
-Questions regarding this tool can be asked in #protondb-discussion or in #off-topic. Please respect the rules of the server if you join!
+If anything is still not working you can open an issue here, or join the ProtonDB to Steam Library Discord server (link is at the top of this README). Please respect the rules of the server if you join!
