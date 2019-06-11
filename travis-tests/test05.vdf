@@ -1,0 +1,52 @@
+"UserRoamingConfigStore"
+{
+	"Software"
+	{
+		"Valve"
+		{
+			"Steam"
+			{
+				"apps"
+				{
+					"218_3152720314"
+					{
+						"tags"
+						{
+							"0" "NONSTEAM"
+							"1" "Sorting"
+						}
+						"hidden" "1"
+					}
+					"249650"
+					{
+						"tags"
+						{
+							"0" "Sorting"
+						}
+					}
+					"586140"
+					{
+						"tags"
+						{
+							"0" "Sorting"
+						}
+					}
+					"302710"
+					{
+						"tags"
+						{
+							"0" "Sorting"
+						}
+					}
+					"464470"
+					{
+						"tags"
+						{
+							"0" "Sorting"
+						}
+					}
+				}
+			}
+		}
+	}
+}
