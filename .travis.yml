@@ -17,3 +17,4 @@ script:
   - python ProtonDB-to-Steam-Library.py -s ./travis-tests/test03.vdf -n
   - python ProtonDB-to-Steam-Library.py -s ./travis-tests/test04.vdf -n
   - python ProtonDB-to-Steam-Library.py -s ./travis-tests/test05.vdf -n
+  - python ProtonDB-to-Steam-Library.py -s ./travis-tests/test06.vdf -n

@@ -191,7 +191,7 @@ def main(argv):
 
         tag_num = ""
         if "tags" in sharedconfig[configstore]["Software"]["Valve"]["Steam"][apps][str(app_id)] \
-        and isinstance(sharedconfig[configstore]["Software"]["Valve"]["Steam"][apps][str(app_id)], dict):
+        and isinstance(sharedconfig[configstore]["Software"]["Valve"]["Steam"][apps][str(app_id)]["tags"], dict):
             # Have to create a copy to avoid: "RuntimeError: dictionary changed size during iteration"
             tags = sharedconfig[configstore]["Software"]["Valve"]["Steam"][apps][str(app_id)]["tags"].copy()
             for tag in tags:
