@@ -7,7 +7,7 @@ python:
   - "3.7"
 
 install: 
-  - pip --disable-pip-version-check install vdf pylint
+  - pip --disable-pip-version-check install -r requirements.txt
 
 script: 
                                         # I would like to eventually reduce the number of disabled checks here, but this is to get TravisCI to pass the build.
