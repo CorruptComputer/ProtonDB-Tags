@@ -64,7 +64,8 @@ def get_protondb_rating(app_id):
 def get_sharedconfig_path():
     possible_paths = ["~/.local/share/Steam/userdata",
                       "~/.steam/steam/userdata",
-                      "~/.steam/root/userdata"]
+                      "~/.steam/root/userdata",
+                      "~/.var/app/com.valvesoftware.Steam/.local/share/Steam/userdata"]
 
     base_path = ""
 
