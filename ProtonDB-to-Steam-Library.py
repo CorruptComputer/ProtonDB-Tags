@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 import argparse
-import getopt
 import os
 import sys
 import time
@@ -107,59 +106,23 @@ def get_sharedconfig_path():
     return os.path.join(base_path, possible_ids[int(user)], "7/remote/sharedconfig.vdf")
 
 
-def main(argv):
-    usage = "Usage: ProtonDB-to-Steam-Library.py \n" \
-          + "        -s <path> | Specify a custom location for sharedconfig.vdf\n" \
-          + "        -n        | Disables the save option at the end to allow for unattended testing\n" \
-          + "        -c        | Check Steam API for native Linux support (WILL add 1+ second per game to lookup)"
+def main(args):
     sharedconfig_path = ""
-    skip_save = False
-    check_steam = False
+    skip_save = args.skip_save
+    check_steam = args.check_steam
 
-    ### From here until the comment saying otherwise is just parsing the command line arguements
-    try:
-        opts, _ = getopt.getopt(argv, "hs:nc")
+    if args.sharedconfig_path:
+        # With ~ for user home
+        if os.path.exists(os.path.expanduser(args.sharedconfig_path)):
+            try:
+                vdf.load(open(args.sharedconfig_path))
+                sharedconfig_path = os.path.expanduser(args.sharedconfig_path)
 
-    except getopt.GetoptError:
-        print(usage)
-        sys.exit()
-
-    for opt, arg in opts:
-        if opt == "-h":
-            print(usage)
-            sys.exit()
-
-        elif opt in "-s":
-            if os.path.exists(arg):
-                try:
-                    vdf.load(open(arg))
-                    sharedconfig_path = arg
-                except:
-                    print(arg)
-                    print("Invalid path!")
-                    sys.exit()
-
-            # With ~ for user home
-            elif os.path.exists(os.path.expanduser(arg)):
-                try:
-                    vdf.load(open(arg))
-                    sharedconfig_path = os.path.expanduser(arg)
-
-                except:
-                    print(os.path.expanduser(arg))
-                    print("Invalid path!")
-                    sys.exit()
-
-            else:
-                print(arg)
-                print("Invalid path!")
+            except:
+                print("Invalid sharedconfig path: '{}'".format(args.sharedconfig_path))
                 sys.exit()
-
-        elif opt in "-n":
-            skip_save = True
-        elif opt in "-c":
-            check_steam = True
-    ### Done with command line arguements
+        else:
+            print("Shared config path '{}' does not exist. Using default path.".format(args.sharedconfig_path))
 
     # If sharedconfig_path was not set with a command line arguement, have get_sharedconfig_path() find it
     if not sharedconfig_path:
@@ -242,4 +205,10 @@ def main(argv):
 
 # Run it
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    parser = argparse.ArgumentParser(description="Add Steam games to categories based on ProtonDB rankings")
+    parser.add_argument("-c", "--check_steam", dest="check_steam", action="store_true", default=False, help="Check Steam API for native Linux support (WILL add 1+ second per game to lookup)")
+    parser.add_argument("-n", "--skip_save", dest="skip_save", action="store_true", default=False, help="Disable the save option at the end to allow for unattended testing")
+    parser.add_argument("-s", dest="sharedconfig_path", help="Specify a custom location for sharedconfig.vdf")
+    arguments = parser.parse_args()
+
+    main(arguments)
