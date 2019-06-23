@@ -35,22 +35,18 @@ def get_configstore_for_vdf(sharedconfig):
     possibleKeys = ["UserLocalConfigStore", "UserRoamingConfigStore"]
     for key in possibleKeys:
         if key in sharedconfig:
-            apps = key
-            return apps
+            return key
 
-    print("Could not load sharedconfig.vdf. Please submit an issue on GitHub and attach your sharedconfig.vdf!")
-    sys.exit()
+    sys.exit("Could not load sharedconfig.vdf. Please submit an issue on GitHub and attach your sharedconfig.vdf!")
 
 # Get the correct apps key.
 def get_apps_key(sharedconfig, configstore):
     possibleKeys = ["apps", "Apps"]
     for key in possibleKeys:
         if key in sharedconfig[configstore]["Software"]["Valve"]["Steam"]:
-            apps = key
-            return apps
+            return key
 
-    print("Could not find the apps. Try adding everything to a category before running.")
-    sys.exit()
+    sys.exit("Could not find the apps. Try adding everything to a category before running.")
 
 
 # Pulls the games ranking from ProtonDB and returns the Teir as a string
@@ -76,7 +72,7 @@ def get_sharedconfig_path():
             expanded_path = os.path.expanduser(path)
             if os.path.exists(expanded_path):
                 base_path = expanded_path
-                print("Steam found at: " + expanded_path)
+                print("Steam found at: {}".format(expanded_path))
                 break
         except FileNotFoundError:
             continue
@@ -94,7 +90,7 @@ def get_sharedconfig_path():
                 username = vdf.load(open(os.path.join(base_path, user_id, "config/localconfig.vdf")))["UserLocalConfigStore"]["friends"]["PersonaName"]
             except:
                 username = "(Could not load username from Steam)"
-            print("Found user " + str(len(possible_ids)) + ": " + user_id + "   " + username)
+            print("Found user {}: {}   {}".format(len(possible_ids), user_id, username))
             possible_ids.append(user_id)
 
     user = 0
@@ -128,20 +124,21 @@ def main(args):
     if not sharedconfig_path:
         sharedconfig_path = get_sharedconfig_path()
 
-    print("Selected: " + sharedconfig_path)
+    print("Selected: {}".format(sharedconfig_path))
     sharedconfig = vdf.load(open(sharedconfig_path))
 
     # Get which version of the configstore you have
     configstore = get_configstore_for_vdf(sharedconfig)
-
     apps = get_apps_key(sharedconfig, configstore)
 
     for app_id in sharedconfig[configstore]["Software"]["Valve"]["Steam"][apps]:
         # This has to be here because some Steam AppID's are strings of text, which ProtonDB does not support. Check test01.vdf line 278 for an example.
         try:
-            app_id = int(app_id)
+            int(app_id)
         except ValueError:
             continue
+
+        app_id = str(app_id)
 
         # If the app is native, no need to check ProtonDB
         if check_steam and is_native(str(app_id)):
@@ -157,25 +154,25 @@ def main(args):
             continue
 
         tag_num = ""
-        if "tags" in sharedconfig[configstore]["Software"]["Valve"]["Steam"][apps][str(app_id)] \
-        and isinstance(sharedconfig[configstore]["Software"]["Valve"]["Steam"][apps][str(app_id)]["tags"], dict):
+        if "tags" in sharedconfig[configstore]["Software"]["Valve"]["Steam"][apps][app_id] \
+        and isinstance(sharedconfig[configstore]["Software"]["Valve"]["Steam"][apps][app_id]["tags"], dict):
             # Have to create a copy to avoid: "RuntimeError: dictionary changed size during iteration"
-            tags = sharedconfig[configstore]["Software"]["Valve"]["Steam"][apps][str(app_id)]["tags"].copy()
+            tags = sharedconfig[configstore]["Software"]["Valve"]["Steam"][apps][app_id]["tags"].copy()
             for tag in tags:
                 # Search to see if a ProtonDB rank is already a tag, if so just overwrite that tag
-                if sharedconfig[configstore]["Software"]["Valve"]["Steam"][apps][str(app_id)]["tags"][tag].startswith("ProtonDB Ranking:", 0, 17):
+                if sharedconfig[configstore]["Software"]["Valve"]["Steam"][apps][app_id]["tags"][tag].startswith("ProtonDB Ranking:", 0, 17):
                     if not tag_num:
                         tag_num = tag
                     else:
                         # Delete dupe tags caused by error of previous versions, may remove this check in the future once its no longer an issue
-                        del sharedconfig[configstore]["Software"]["Valve"]["Steam"][apps][str(app_id)]["tags"][tag]
+                        del sharedconfig[configstore]["Software"]["Valve"]["Steam"][apps][app_id]["tags"][tag]
             if not tag_num:
                 # If no ProtonDB tags were found, use the next available number
-                tag_num = str(len(sharedconfig[configstore]["Software"]["Valve"]["Steam"][apps][str(app_id)]["tags"]))
+                tag_num = str(len(sharedconfig[configstore]["Software"]["Valve"]["Steam"][apps][app_id]["tags"]))
         # If the tags key wasn't found, that means there are no tags for the game
         else:
             tag_num = "0"
-            sharedconfig[configstore]["Software"]["Valve"]["Steam"][apps][str(app_id)]["tags"] = vdf.VDFDict()
+            sharedconfig[configstore]["Software"]["Valve"]["Steam"][apps][app_id]["tags"] = vdf.VDFDict()
 
         # The 1,2,etc. force the better ranks to be at the top, as Steam sorts these alphabetically
         possible_ranks = {
@@ -190,9 +187,9 @@ def main(args):
 
         # Try to inject the tag into the vdfDict, if the returned rating from ProtonDB isn't a key above it will error out
         if protondb_rating in possible_ranks:
-            sharedconfig[configstore]["Software"]["Valve"]["Steam"][apps][str(app_id)]["tags"][tag_num] = possible_ranks[protondb_rating]
+            sharedconfig[configstore]["Software"]["Valve"]["Steam"][apps][app_id]["tags"][tag_num] = possible_ranks[protondb_rating]
         else:
-            print("Unknown ProtonDB rating: " + protondb_rating + "\n Please report this on GitHub!")
+            print("Unknown ProtonDB rating: {}\n Please report this on GitHub!".format(protondb_rating))
 
 
     # skip_save will be True if -n is passed
