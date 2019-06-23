@@ -1,33 +1,35 @@
 #!/usr/bin/python3
 
+import argparse
+import getopt
 import os
 import sys
-import json
-import urllib.request
-import getopt
 import time
 import vdf
+
+import requests
+
+class ProtonDBError(Exception):
+    pass
 
 # Checks if the game has Native Linux support
 def is_native(app_id):
     # Wait 1 second before continuing, as Steam only allows 10 requests per 10 seconds, otherwise you get rate limited for a few minutes.
     time.sleep(1)
 
-    try:
-        # Thanks to u/FurbyOnSteroid for finding this! https://www.reddit.com/r/linux_gaming/comments/bxqsvs/protondb_to_steam_library_tool/eqal68r/
-        req = urllib.request.urlopen("https://store.steampowered.com/api/appdetails?appids=" + app_id + "&filters=platforms")
-        data = req.read()
-        enc = req.info().get_content_charset('utf-8')
-        steam_api_result = json.loads(str(data.decode(enc)))
-
-        # If steam can't find the game it will be False
-        if steam_api_result[app_id]["success"] in ["True", "true", True]:
-            return (steam_api_result[app_id]["data"]["platforms"]["linux"] in ["True", "true", True])
-
+    # Thanks to u/FurbyOnSteroid for finding this! https://www.reddit.com/r/linux_gaming/comments/bxqsvs/protondb_to_steam_library_tool/eqal68r/
+    r = requests.get("https://store.steampowered.com/api/appdetails?appids={}&filters=platforms".format(app_id))
+    if r.status_code != 200:
+        print("Error pulling info from Steam API for {}. You're probably being rate-limited".format(app_id))
         return False
-    except urllib.error.HTTPError:
-        print("Error pulling info from Steam API for " + app_id + " (you're probably being rate-limited)")
-        return False
+
+    steam_api_result = r.json()
+
+    # If steam can't find the game it will be False
+    if steam_api_result[app_id]["success"] in ["True", "true", True]:
+        return (steam_api_result[app_id]["data"]["platforms"]["linux"] in ["True", "true", True])
+
+    return False
 
 # Checks which version of the sharedconfig you have, some are Local and some are Remote
 def get_configstore_for_vdf(sharedconfig):
@@ -54,10 +56,11 @@ def get_apps_key(sharedconfig, configstore):
 
 # Pulls the games ranking from ProtonDB and returns the Teir as a string
 def get_protondb_rating(app_id):
-    req = urllib.request.urlopen("https://www.protondb.com/api/v1/reports/summaries/" + str(app_id) + ".json")
-    data = req.read()
-    enc = req.info().get_content_charset('utf-8')
-    protondb_json = json.loads(str(data.decode(enc)))
+    r = requests.get("https://www.protondb.com/api/v1/reports/summaries/{}.json".format(app_id))
+    if r.status_code != 200:
+        raise ProtonDBError()
+    protondb_json = r.json()
+    # use trendingTier as this reflects a more up-to-date rating rather than an all-time rating
     return protondb_json["trendingTier"]
 
 # Trys to find the path to your localconfig.vdf, these are the most common Steam install locations
@@ -179,15 +182,15 @@ def main(argv):
 
         # If the app is native, no need to check ProtonDB
         if check_steam and is_native(str(app_id)):
-            print(str(app_id) + " native")
+            print("{} native".format(app_id))
             continue
 
         # Get the ProtonDB rating for the app, if ProtonDB 404's it means no rating is available for the game and likely native
         protondb_rating = ""
         try:
             protondb_rating = get_protondb_rating(app_id)
-            print(str(app_id) + " " + protondb_rating)
-        except urllib.error.HTTPError:
+            print("{} {}".format(app_id, protondb_rating))
+        except ProtonDBError:
             continue
 
         tag_num = ""
