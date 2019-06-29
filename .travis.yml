@@ -11,10 +11,10 @@ install:
 
 script: 
                                         # I would like to eventually reduce the number of disabled checks here, but this is to get TravisCI to pass the build.
-  - pylint ProtonDB-to-Steam-Library.py --disable=line-too-long,bare-except,too-many-branches,too-many-statements,too-many-locals,invalid-name,missing-docstring,too-many-nested-blocks
-  - python ProtonDB-to-Steam-Library.py -s ./travis-tests/test01.vdf -n
-  - python ProtonDB-to-Steam-Library.py -s ./travis-tests/test02.vdf -n
-  - python ProtonDB-to-Steam-Library.py -s ./travis-tests/test03.vdf -n
-  - python ProtonDB-to-Steam-Library.py -s ./travis-tests/test04.vdf -n
-  - python ProtonDB-to-Steam-Library.py -s ./travis-tests/test05.vdf -n
-  - python ProtonDB-to-Steam-Library.py -s ./travis-tests/test06.vdf -n
+  - pylint ProtonDB-to-Steam-Library.py --disable=line-too-long,invalid-name,missing-docstring,bare-except,too-many-branches
+  - python ProtonDB-to-Steam-Library.py --sharedconfig ./travis-tests/test01.vdf --check-native --no-save
+  - python ProtonDB-to-Steam-Library.py --sharedconfig ./travis-tests/test02.vdf --no-save
+  - python ProtonDB-to-Steam-Library.py --sharedconfig ./travis-tests/test03.vdf --no-save
+  - python ProtonDB-to-Steam-Library.py --sharedconfig ./travis-tests/test04.vdf --no-save
+  - python ProtonDB-to-Steam-Library.py --sharedconfig ./travis-tests/test05.vdf --no-save
+  - python ProtonDB-to-Steam-Library.py --sharedconfig ./travis-tests/test06.vdf --no-save

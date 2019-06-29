@@ -12,21 +12,23 @@ class ProtonDBError(Exception):
     pass
 
 # Checks if the game has Native Linux support
+# In the near futute I would like to add caching to this in order to speed up the runtime of the script.
+# However, it needs to be implemented in a way so that it re-checks after a set amount of time to see if anything has changed.
 def is_native(app_id):
     # Wait 1 second before continuing, as Steam only allows 10 requests per 10 seconds, otherwise you get rate limited for a few minutes.
     time.sleep(1)
 
     # Thanks to u/FurbyOnSteroid for finding this! https://www.reddit.com/r/linux_gaming/comments/bxqsvs/protondb_to_steam_library_tool/eqal68r/
-    r = requests.get("https://store.steampowered.com/api/appdetails?appids={}&filters=platforms".format(app_id))
-    if r.status_code != 200:
+    steam_api_result = requests.get("https://store.steampowered.com/api/appdetails?appids={}&filters=platforms".format(app_id))
+    if steam_api_result.status_code != 200:
         print("Error pulling info from Steam API for {}. You're probably being rate-limited".format(app_id))
         return False
 
-    steam_api_result = r.json()
+    steam_api_json = steam_api_result.json()
 
     # If steam can't find the game it will be False
-    if steam_api_result[app_id]["success"] in ["True", "true", True]:
-        return (steam_api_result[app_id]["data"]["platforms"]["linux"] in ["True", "true", True])
+    if steam_api_json[app_id]["success"] in ["True", "true", True]:
+        return (steam_api_json[app_id]["data"]["platforms"]["linux"] in ["True", "true", True])
 
     return False
 
@@ -51,12 +53,12 @@ def get_apps_key(sharedconfig, configstore):
 
 # Pulls the games ranking from ProtonDB and returns the Teir as a string
 def get_protondb_rating(app_id):
-    r = requests.get("https://www.protondb.com/api/v1/reports/summaries/{}.json".format(app_id))
-    if r.status_code != 200:
+    protondb_api_result = requests.get("https://www.protondb.com/api/v1/reports/summaries/{}.json".format(app_id))
+    if protondb_api_result.status_code != 200:
         raise ProtonDBError()
-    protondb_json = r.json()
+    protondb_api_json = protondb_api_result.json()
     # use trendingTier as this reflects a more up-to-date rating rather than an all-time rating
-    return protondb_json["trendingTier"]
+    return protondb_api_json["trendingTier"]
 
 # Trys to find the path to your localconfig.vdf, these are the most common Steam install locations
 def get_sharedconfig_path():
@@ -101,11 +103,36 @@ def get_sharedconfig_path():
 
     return os.path.join(base_path, possible_ids[int(user)], "7/remote/sharedconfig.vdf")
 
+def get_tag_number(app):
+    tag_num = ""
+
+    if "tags" in app \
+    and isinstance(app["tags"], dict):
+        # Have to create a copy to avoid: "RuntimeError: dictionary changed size during iteration"
+        tags = app["tags"].copy()
+        for tag in tags:
+            # Search to see if a ProtonDB rank is already a tag, if so just overwrite that tag
+            if app["tags"][tag].startswith("ProtonDB Ranking:", 0, 17):
+                if not tag_num:
+                    tag_num = tag
+                else:
+                    # Delete dupe tags caused by error of previous versions, may remove this check in the future once its no longer an issue
+                    del app["tags"][tag]
+        if not tag_num:
+            # If no ProtonDB tags were found, use the next available number
+            tag_num = str(len(app["tags"]))
+    # If the tags key wasn't found, that means there are no tags for the game
+    else:
+        tag_num = "0"
+        app["tags"] = vdf.VDFDict()
+
+    return tag_num
+
 
 def main(args):
     sharedconfig_path = ""
-    skip_save = args.skip_save
-    check_steam = args.check_steam
+    no_save = args.no_save
+    check_native = args.check_native
 
     if args.sharedconfig_path:
         # With ~ for user home
@@ -129,53 +156,35 @@ def main(args):
 
     # Get which version of the configstore you have
     configstore = get_configstore_for_vdf(sharedconfig)
-    apps = get_apps_key(sharedconfig, configstore)
 
-    for app_id in sharedconfig[configstore]["Software"]["Valve"]["Steam"][apps]:
+    # This makes the code slightly cleaner
+    apps = sharedconfig[configstore]["Software"]["Valve"]["Steam"][get_apps_key(sharedconfig, configstore)]
+
+    for app_id in apps:
         # This has to be here because some Steam AppID's are strings of text, which ProtonDB does not support. Check test01.vdf line 278 for an example.
         try:
             int(app_id)
         except ValueError:
             continue
 
-        app_id = str(app_id)
-
-        # If the app is native, no need to check ProtonDB
-        if check_steam and is_native(str(app_id)):
-            print("{} native".format(app_id))
-            continue
-
-        # Get the ProtonDB rating for the app, if ProtonDB 404's it means no rating is available for the game and likely native
         protondb_rating = ""
-        try:
-            protondb_rating = get_protondb_rating(app_id)
-            print("{} {}".format(app_id, protondb_rating))
-        except ProtonDBError:
-            continue
-
-        tag_num = ""
-        if "tags" in sharedconfig[configstore]["Software"]["Valve"]["Steam"][apps][app_id] \
-        and isinstance(sharedconfig[configstore]["Software"]["Valve"]["Steam"][apps][app_id]["tags"], dict):
-            # Have to create a copy to avoid: "RuntimeError: dictionary changed size during iteration"
-            tags = sharedconfig[configstore]["Software"]["Valve"]["Steam"][apps][app_id]["tags"].copy()
-            for tag in tags:
-                # Search to see if a ProtonDB rank is already a tag, if so just overwrite that tag
-                if sharedconfig[configstore]["Software"]["Valve"]["Steam"][apps][app_id]["tags"][tag].startswith("ProtonDB Ranking:", 0, 17):
-                    if not tag_num:
-                        tag_num = tag
-                    else:
-                        # Delete dupe tags caused by error of previous versions, may remove this check in the future once its no longer an issue
-                        del sharedconfig[configstore]["Software"]["Valve"]["Steam"][apps][app_id]["tags"][tag]
-            if not tag_num:
-                # If no ProtonDB tags were found, use the next available number
-                tag_num = str(len(sharedconfig[configstore]["Software"]["Valve"]["Steam"][apps][app_id]["tags"]))
-        # If the tags key wasn't found, that means there are no tags for the game
+        # If the app is native, no need to check ProtonDB
+        if check_native and is_native(app_id):
+            protondb_rating = "native"
+            print("{} native".format(app_id))
         else:
-            tag_num = "0"
-            sharedconfig[configstore]["Software"]["Valve"]["Steam"][apps][app_id]["tags"] = vdf.VDFDict()
+            # Get the ProtonDB rating for the app, if ProtonDB 404's it means no rating is available for the game and likely native
+            try:
+                protondb_rating = get_protondb_rating(app_id)
+                print("{} {}".format(app_id, protondb_rating))
+            except ProtonDBError:
+                continue
+
+        tag_num = get_tag_number(apps[app_id])
 
         # The 1,2,etc. force the better ranks to be at the top, as Steam sorts these alphabetically
         possible_ranks = {
+            "native": "ProtonDB Ranking: 0 Native", # This should probably be changed eventually, but this is to allow us to scan the tags for an existing one.
             "platinum": "ProtonDB Ranking: 1 Platinum",
             "gold": "ProtonDB Ranking: 2 Gold",
             "silver": "ProtonDB Ranking: 3 Silver",
@@ -187,13 +196,13 @@ def main(args):
 
         # Try to inject the tag into the vdfDict, if the returned rating from ProtonDB isn't a key above it will error out
         if protondb_rating in possible_ranks:
-            sharedconfig[configstore]["Software"]["Valve"]["Steam"][apps][app_id]["tags"][tag_num] = possible_ranks[protondb_rating]
+            apps[app_id]["tags"][tag_num] = possible_ranks[protondb_rating]
         else:
             print("Unknown ProtonDB rating: {}\n Please report this on GitHub!".format(protondb_rating))
 
 
-    # skip_save will be True if -n is passed
-    if not skip_save:
+    # no_save will be True if -n is passed
+    if not no_save:
         print("WARNING: This may clear your current tags on Steam!")
         check = input("Would you like to save sharedconfig.vdf? (y/N)")
         if check.lower() in ("yes", "y"):
@@ -203,9 +212,9 @@ def main(args):
 # Run it
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Add Steam games to categories based on ProtonDB rankings")
-    parser.add_argument("-c", "--check_steam", dest="check_steam", action="store_true", default=False, help="Check Steam API for native Linux support (WILL add 1+ second per game to lookup)")
-    parser.add_argument("-n", "--skip_save", dest="skip_save", action="store_true", default=False, help="Disable the save option at the end to allow for unattended testing")
-    parser.add_argument("-s", dest="sharedconfig_path", help="Specify a custom location for sharedconfig.vdf")
+    parser.add_argument("-c", "--check-native", dest="check_native", action="store_true", default=False, help="Check Steam API for native Linux support (WILL add 1+ second per game to lookup)")
+    parser.add_argument("-n", "--no-save", dest="no_save", action="store_true", default=False, help="Disable the save option at the end to allow for unattended testing")
+    parser.add_argument("-s", "--sharedconfig", dest="sharedconfig_path", help="Specify a custom location for sharedconfig.vdf")
     arguments = parser.parse_args()
 
     main(arguments)
