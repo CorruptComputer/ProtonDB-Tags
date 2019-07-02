@@ -11,6 +11,12 @@ import requests
 class ProtonDBError(Exception):
     pass
 
+# Python 2 compatability
+try:
+    input = raw_input
+except NameError:
+    pass
+
 # Checks if the game has Native Linux support
 # In the near futute I would like to add caching to this in order to speed up the runtime of the script.
 # However, it needs to be implemented in a way so that it re-checks after a set amount of time to see if anything has changed.
