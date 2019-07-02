@@ -53,13 +53,26 @@ If you would like to make a PR all I ask is that you are also open to feedback o
 ### Troubleshooting
 
 If you are finding that only some of your Proton compatible games are being categorized try this:
-
 1. Select all of the games in your library
 2. Right click -> Set Categories...
 3. Add some random category to them all (you can remove this later)
 4. Close Steam to force it to write all of your games to the sharedconfig.vdf file
 5. Try running the script again
 
-Please keep in mind that Linux Native games shouldn't be categorized.
+Please keep in mind that most Linux Native games will not be categorized without the `--check-native` flag, as ProtonDB doesn't return anything for them.
+
+If you get an error which looks like this:
+```
+WARNING: This may clear your current tags on Steam!
+Would you like to save sharedconfig.vdf? (y/N)y
+Traceback (most recent call last):
+  File "ProtonDB-to-Steam-Library.py", line 220, in 
+    main(arguments)
+  File "ProtonDB-to-Steam-Library.py", line 207, in main
+    check = input("Would you like to save sharedconfig.vdf? (y/N)")
+  File "", line 1, in 
+    NameError: name 'y' is not defined
+```
+It means you ran the script with python2, please run it with python3. More info about why this error happens can be found [here](https://stackoverflow.com/a/21122817).
 
 If anything is still not working you can open an issue here, or join the ProtonDB to Steam Library Discord server (link is at the top of this README). Please respect the rules of the server if you join!
