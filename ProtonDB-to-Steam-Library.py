@@ -264,7 +264,6 @@ def main(args):
 if __name__ == "__main__":
     PARSER = argparse.ArgumentParser(description="Add Steam games to categories based on ProtonDB rankings")
     PARSER.add_argument("-c", "--check-native", dest="check_native", action="store_true", default=False, help="Check for native Linux support (WILL add 1+ second per game to lookup if not cached)")
-    PARSER.add_argument("-b", "--build-cache", dest="build_cache", action="store_true", default=False, help="Check Steam API for native Linux support and add results to cache")
     PARSER.add_argument("-n", "--no-save", dest="no_save", action="store_true", default=False, help="Disable the save option at the end to allow for unattended testing")
     PARSER.add_argument("-s", "--sharedconfig", dest="sharedconfig_path", help="Specify a custom location for sharedconfig.vdf")
     ARGUMENTS = PARSER.parse_args()

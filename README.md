@@ -32,14 +32,16 @@ python ProtonDB-to-Steam-Library.py
 
 It will also ask before saving the file, so if you want to just test it out theres no real danger of overwriting anything.
 
+By default this will not check the Steam API for native titles. This can be enabled with the `--check-native` flag. This will add a 1 second wait to each Steam API call, as without this you will get rate-limited. The script will build a cache of these as it runs, so after the first run it will go faster.
+
 You can also specify a custom path to your sharedconfig.vdf with: 
 ```bash
-python ProtonDB-to-Steam-Library.py -s /path/to/sharedconfig.vdf
+python ProtonDB-to-Steam-Library.py --sharedconfig /path/to/sharedconfig.vdf
 ```
 
 The full command line options can be viewed with: 
 ```bash
-python ProtonDB-to-Steam-Library.py -h
+python ProtonDB-to-Steam-Library.py --help
 ```
 
 ### Contributing
