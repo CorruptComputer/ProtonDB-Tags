@@ -4,22 +4,39 @@ import argparse
 import os
 import sys
 import time
+import json
 import vdf
-
 import requests
+
 
 class ProtonDBError(Exception):
     pass
 
-# Checks if the game has Native Linux support
-# In the near futute I would like to add caching to this in order to speed up the runtime of the script.
-# However, it needs to be implemented in a way so that it re-checks after a set amount of time to see if anything has changed.
+
+###############################################################################
+#    Checks if the game has Native Linux support from the Steam Store API     #
+# app_id: (str) The steam application id to check                             #
+# return: (boolean) If the game is native                                     #
+###############################################################################
 def is_native(app_id):
+    cache_path = os.path.expanduser("./steamNativeCache.json")
+    cache = {}
+
+    if os.path.exists(cache_path):
+        cache = json.load(open(cache_path))
+        if app_id in cache:
+            return cache[app_id] in ["True", "true", True]
+    else:
+        print("Steam native cache not found. Creating...")
+
+
+    # Thanks to u/FurbyOnSteroid for finding this!
+    # https://www.reddit.com/r/linux_gaming/comments/bxqsvs/protondb_to_steam_library_tool/eqal68r/
+    api_url = "https://store.steampowered.com/api/appdetails?appids={}&filters=platforms".format(app_id)
+    steam_api_result = requests.get(api_url)
     # Wait 1 second before continuing, as Steam only allows 10 requests per 10 seconds, otherwise you get rate limited for a few minutes.
     time.sleep(1)
 
-    # Thanks to u/FurbyOnSteroid for finding this! https://www.reddit.com/r/linux_gaming/comments/bxqsvs/protondb_to_steam_library_tool/eqal68r/
-    steam_api_result = requests.get("https://store.steampowered.com/api/appdetails?appids={}&filters=platforms".format(app_id))
     if steam_api_result.status_code != 200:
         print("Error pulling info from Steam API for {}. You're probably being rate-limited".format(app_id))
         return False
@@ -28,30 +45,49 @@ def is_native(app_id):
 
     # If steam can't find the game it will be False
     if steam_api_json[app_id]["success"] in ["True", "true", True]:
-        return (steam_api_json[app_id]["data"]["platforms"]["linux"] in ["True", "true", True])
+        is_native_game = steam_api_json[app_id]["data"]["platforms"]["linux"] in ["True", "true", True]
+        cache[app_id] = str(is_native_game)
+        json.dump(cache, open(cache_path, 'w'))
+
+        return is_native_game
 
     return False
 
-# Checks which version of the sharedconfig you have, some are Local and some are Remote
+
+###############################################################################
+#   Checks which ConfigStore you have, some are Local and some are Roaming    #
+# sharedconfig: (vdf) The vdf dict to check                                   #
+# return: (str) The ConfigStore key to use for the vdf                        #
+###############################################################################
 def get_configstore_for_vdf(sharedconfig):
-    possibleKeys = ["UserLocalConfigStore", "UserRoamingConfigStore"]
-    for key in possibleKeys:
+    possible_keys = ["UserLocalConfigStore", "UserRoamingConfigStore"]
+    for key in possible_keys:
         if key in sharedconfig:
             return key
 
     sys.exit("Could not load sharedconfig.vdf. Please submit an issue on GitHub and attach your sharedconfig.vdf!")
 
-# Get the correct apps key.
+
+###############################################################################
+#               Get the correct apps key for the sharedconfig                 #
+# sharedconfig: (vdf) The vdf dict to check                                   #
+# configstore: (str) The ConfigStore key to use for the vdf                   #
+# return: (str) The correct key for apps in the vdf                           #
+###############################################################################
 def get_apps_key(sharedconfig, configstore):
-    possibleKeys = ["apps", "Apps"]
-    for key in possibleKeys:
+    possible_keys = ["apps", "Apps"]
+    for key in possible_keys:
         if key in sharedconfig[configstore]["Software"]["Valve"]["Steam"]:
             return key
 
     sys.exit("Could not find the apps. Try adding everything to a category before running.")
 
 
-# Pulls the games ranking from ProtonDB and returns the Teir as a string
+###############################################################################
+#             Gets the rating for the game from ProtonDB's API                #
+# app_id: (str) The Steam application ID to check ProtonDB for                #
+# return: (str) The rating returned from ProtonDB                             #
+###############################################################################
 def get_protondb_rating(app_id):
     protondb_api_result = requests.get("https://www.protondb.com/api/v1/reports/summaries/{}.json".format(app_id))
     if protondb_api_result.status_code != 200:
@@ -60,12 +96,17 @@ def get_protondb_rating(app_id):
     # use trendingTier as this reflects a more up-to-date rating rather than an all-time rating
     return protondb_api_json["trendingTier"]
 
-# Trys to find the path to your localconfig.vdf, these are the most common Steam install locations
-def get_sharedconfig_path():
+
+###############################################################################
+#       Tries to find where Steam is installed to on the local machine        #
+# return: (str) The path to the Steam install location                        #
+###############################################################################
+def find_sharedconfig():
     possible_paths = ["~/.local/share/Steam/userdata",
                       "~/.steam/steam/userdata",
                       "~/.steam/root/userdata",
-                      "~/.var/app/com.valvesoftware.Steam/.local/share/Steam/userdata"]
+                      "~/.var/app/com.valvesoftware.Steam/.local/share/Steam/userdata",
+                      "C:\\Program Files (x86)\\Steam\\userdata"]
 
     base_path = ""
 
@@ -80,7 +121,7 @@ def get_sharedconfig_path():
             continue
 
     else:
-        print("Could not find Steam! Please pass the path to sharedconfig.vdf with the -s parameter.")
+        print("Could not find Steam! Please pass the path to sharedconfig.vdf with the --sharedconfig parameter.")
         sys.exit()
 
     # Some people may have more than one Steam user on their PC, this checks for that and asks which you would like to use if multiple are found
@@ -103,11 +144,17 @@ def get_sharedconfig_path():
 
     return os.path.join(base_path, possible_ids[int(user)], "7/remote/sharedconfig.vdf")
 
+
+###############################################################################
+#      Checks for an existing ProtonDB Rating tag, if it doesn't have one     #
+#      it finds the next available tag number to add for the game             #
+# app: (vdf) The vdf dict for the current app                                 #
+# return: (str) The number (key) to use for the Steam tag                     #
+###############################################################################
 def get_tag_number(app):
     tag_num = ""
 
-    if "tags" in app \
-    and isinstance(app["tags"], dict):
+    if "tags" in app and isinstance(app["tags"], dict):
         # Have to create a copy to avoid: "RuntimeError: dictionary changed size during iteration"
         tags = app["tags"].copy()
         for tag in tags:
@@ -129,6 +176,10 @@ def get_tag_number(app):
     return tag_num
 
 
+###############################################################################
+#                      Main function, does everything                         #
+# args: Arguments passed to the script via command line                       #
+###############################################################################
 def main(args):
     sharedconfig_path = ""
     no_save = args.no_save
@@ -147,9 +198,9 @@ def main(args):
         else:
             print("Shared config path '{}' does not exist. Using default path.".format(args.sharedconfig_path))
 
-    # If sharedconfig_path was not set with a command line arguement, have get_sharedconfig_path() find it
+    # If sharedconfig_path was not set with a command line argument, have get_sharedconfig_path() find it
     if not sharedconfig_path:
-        sharedconfig_path = get_sharedconfig_path()
+        sharedconfig_path = find_sharedconfig()
 
     print("Selected: {}".format(sharedconfig_path))
     sharedconfig = vdf.load(open(sharedconfig_path))
@@ -182,16 +233,16 @@ def main(args):
 
         tag_num = get_tag_number(apps[app_id])
 
-        # The 1,2,etc. force the better ranks to be at the top, as Steam sorts these alphabetically
+        # The 1,2,etc. force the better ranks to be at the top, as Steam sorts these alphanumerically
         possible_ranks = {
-            "native": "ProtonDB Ranking: 0 Native", # This should probably be changed eventually, but this is to allow us to scan the tags for an existing one.
+            "native":   "ProtonDB Ranking: 0 Native", # This should probably be changed eventually, but this is to allow us to scan the tags for an existing one.
             "platinum": "ProtonDB Ranking: 1 Platinum",
-            "gold": "ProtonDB Ranking: 2 Gold",
-            "silver": "ProtonDB Ranking: 3 Silver",
-            "bronze": "ProtonDB Ranking: 4 Bronze",
-            "pending": "ProtonDB Ranking: 5 Pending",
-            "unrated": "ProtonDB Ranking: 6 Unrated",
-            "borked": "ProtonDB Ranking: 7 Borked",
+            "gold":     "ProtonDB Ranking: 2 Gold",
+            "silver":   "ProtonDB Ranking: 3 Silver",
+            "bronze":   "ProtonDB Ranking: 4 Bronze",
+            "pending":  "ProtonDB Ranking: 5 Pending",
+            "unrated":  "ProtonDB Ranking: 6 Unrated",
+            "borked":   "ProtonDB Ranking: 7 Borked",
         }
 
         # Try to inject the tag into the vdfDict, if the returned rating from ProtonDB isn't a key above it will error out
@@ -206,15 +257,16 @@ def main(args):
         print("WARNING: This may clear your current tags on Steam!")
         check = input("Would you like to save sharedconfig.vdf? (y/N)")
         if check.lower() in ("yes", "y"):
-            # Output the edited vdfDict back to the origional location
+            # Output the edited vdfDict back to the original location
             vdf.dump(sharedconfig, open(sharedconfig_path, 'w'), pretty=True)
 
 # Run it
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Add Steam games to categories based on ProtonDB rankings")
-    parser.add_argument("-c", "--check-native", dest="check_native", action="store_true", default=False, help="Check Steam API for native Linux support (WILL add 1+ second per game to lookup)")
-    parser.add_argument("-n", "--no-save", dest="no_save", action="store_true", default=False, help="Disable the save option at the end to allow for unattended testing")
-    parser.add_argument("-s", "--sharedconfig", dest="sharedconfig_path", help="Specify a custom location for sharedconfig.vdf")
-    arguments = parser.parse_args()
+    PARSER = argparse.ArgumentParser(description="Add Steam games to categories based on ProtonDB rankings")
+    PARSER.add_argument("-c", "--check-native", dest="check_native", action="store_true", default=False, help="Check for native Linux support (WILL add 1+ second per game to lookup if not cached)")
+    PARSER.add_argument("-b", "--build-cache", dest="build_cache", action="store_true", default=False, help="Check Steam API for native Linux support and add results to cache")
+    PARSER.add_argument("-n", "--no-save", dest="no_save", action="store_true", default=False, help="Disable the save option at the end to allow for unattended testing")
+    PARSER.add_argument("-s", "--sharedconfig", dest="sharedconfig_path", help="Specify a custom location for sharedconfig.vdf")
+    ARGUMENTS = PARSER.parse_args()
 
-    main(arguments)
+    main(ARGUMENTS)
