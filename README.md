@@ -1,4 +1,4 @@
-# ProtonDB to Steam Library [![Build Status](https://travis-ci.com/CorruptComputer/ProtonDB-to-Steam-Library.svg?branch=master)](https://travis-ci.com/CorruptComputer/ProtonDB-to-Steam-Library)[<img src="https://discordapp.com/assets/f8389ca1a741a115313bede9ac02e2c0.svg" width="45" height="45" alt="ProtonDB to Steam Library Discord" title="ProtonDB to Steam Library Discord">](https://discord.gg/mt3KYmE)
+# ProtonDB to Steam Library [![Build Status](https://travis-ci.com/CorruptComputer/ProtonDB-to-Steam-Library.svg?branch=master)](https://travis-ci.com/CorruptComputer/ProtonDB-to-Steam-Library)[<img src="https://discordapp.com/assets/f8389ca1a741a115313bede9ac02e2c0.svg" width="45" height="45" alt="Discord" title="Discord">](https://discord.gg/87fJcCY)
 
 This is just a small python script to pull ratings from ProtonDB and import them into your Steam library as tags.
 
@@ -77,4 +77,4 @@ Traceback (most recent call last):
 ```
 It means you ran the script with python2, please run it with python3. More info about why this error happens can be found [here](https://stackoverflow.com/a/21122817).
 
-If anything is still not working you can open an issue here, or join the ProtonDB to Steam Library Discord server (link is at the top of this README). Please respect the rules of the server if you join!
+If anything is still not working you can open an issue here, or join my Discord server (link is at the top of this README). Please respect the rules of the server if you join!
