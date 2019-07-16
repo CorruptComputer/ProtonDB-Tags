@@ -23,11 +23,12 @@ def is_native(app_id):
     cache = {}
 
     if os.path.exists(cache_path):
-        cache = json.load(open(cache_path))
+        with open(cache_path) as cache_file:
+            cache = json.load(cache_file)
         if app_id in cache:
             return cache[app_id] in ["True", "true", True]
     else:
-        print("Steam native cache not found. Creating...")
+        print("Steam native cache not found.")
 
 
     # Thanks to u/FurbyOnSteroid for finding this!
@@ -45,9 +46,12 @@ def is_native(app_id):
 
     # If steam can't find the game it will be False
     if steam_api_json[app_id]["success"] in ["True", "true", True]:
+        if not os.path.exists(cache_path):
+            print("Creating Steam native cache...")
         is_native_game = steam_api_json[app_id]["data"]["platforms"]["linux"] in ["True", "true", True]
         cache[app_id] = str(is_native_game)
-        json.dump(cache, open(cache_path, 'w'))
+        with open(cache_path, 'w') as cache_file:
+            json.dump(cache, cache_file)
 
         return is_native_game
 
@@ -130,7 +134,8 @@ def find_sharedconfig():
         if os.path.isdir(os.path.join(base_path, user_id)):
             username = ""
             try:
-                username = vdf.load(open(os.path.join(base_path, user_id, "config/localconfig.vdf")))["UserLocalConfigStore"]["friends"]["PersonaName"]
+                with open(os.path.join(base_path, user_id, "config/localconfig.vdf")) as localconfig_vdf:
+                    username = vdf.load(localconfig_vdf)["UserLocalConfigStore"]["friends"]["PersonaName"]
             except:
                 username = "(Could not load username from Steam)"
             print("Found user {}: {}   {}".format(len(possible_ids), user_id, username))
@@ -189,7 +194,8 @@ def main(args):
         # With ~ for user home
         if os.path.exists(os.path.expanduser(args.sharedconfig_path)):
             try:
-                vdf.load(open(args.sharedconfig_path))
+                with open(args.sharedconfig_path) as sharedconfig_vdf:
+                    vdf.load(sharedconfig_vdf)
                 sharedconfig_path = os.path.expanduser(args.sharedconfig_path)
 
             except:
@@ -203,7 +209,8 @@ def main(args):
         sharedconfig_path = find_sharedconfig()
 
     print("Selected: {}".format(sharedconfig_path))
-    sharedconfig = vdf.load(open(sharedconfig_path))
+    with open(sharedconfig_path) as sharedconfig_vdf:
+        sharedconfig = vdf.load(sharedconfig_vdf)
 
     # Get which version of the configstore you have
     configstore = get_configstore_for_vdf(sharedconfig)
@@ -258,7 +265,8 @@ def main(args):
         check = input("Would you like to save sharedconfig.vdf? (y/N)")
         if check.lower() in ("yes", "y"):
             # Output the edited vdfDict back to the original location
-            vdf.dump(sharedconfig, open(sharedconfig_path, 'w'), pretty=True)
+            with open(sharedconfig_path, 'w') as sharedconfig_vdf:
+                vdf.dump(sharedconfig, sharedconfig_vdf, pretty=True)
 
 # Run it
 if __name__ == "__main__":
