@@ -1,4 +1,6 @@
-# ProtonDB to Steam Library [![Build Status](https://travis-ci.com/CorruptComputer/ProtonDB-to-Steam-Library.svg?branch=master)](https://travis-ci.com/CorruptComputer/ProtonDB-to-Steam-Library)[<img src="https://discordapp.com/assets/f8389ca1a741a115313bede9ac02e2c0.svg" width="45" height="45" alt="Discord" title="Discord">](https://discord.gg/87fJcCY)
+# ProtonDB-Tags [![Build Status](https://travis-ci.com/CorruptComputer/ProtonDB-to-Steam-Library.svg?branch=master)](https://travis-ci.com/CorruptComputer/ProtonDB-to-Steam-Library)[<img src="https://discordapp.com/assets/f8389ca1a741a115313bede9ac02e2c0.svg" width="45" height="45" alt="Discord" title="Discord">](https://discord.gg/87fJcCY)
+
+**Just a quick heads up, the script has been renamed to ProtonDB-Tags and the repo will soon follow on August 19th!**
 
 This is just a small python script to pull ratings from ProtonDB and import them into your Steam library as tags.
 
@@ -27,7 +29,7 @@ pip install -r requirements.txt
 
 This can be simply run with: 
 ```bash
-python ProtonDB-to-Steam-Library.py
+python ProtonDB-Tags.py
 ```
 
 It will also ask before saving the file, so if you want to just test it out theres no real danger of overwriting anything.
@@ -36,12 +38,12 @@ By default this will not check the Steam API for native titles. This can be enab
 
 You can also specify a custom path to your sharedconfig.vdf with: 
 ```bash
-python ProtonDB-to-Steam-Library.py --sharedconfig /path/to/sharedconfig.vdf
+python ProtonDB-Tags.py --sharedconfig /path/to/sharedconfig.vdf
 ```
 
 The full command line options can be viewed with: 
 ```bash
-python ProtonDB-to-Steam-Library.py --help
+python ProtonDB-Tags.py --help
 ```
 
 ### Contributing
@@ -68,9 +70,9 @@ If you get an error which looks like this:
 WARNING: This may clear your current tags on Steam!
 Would you like to save sharedconfig.vdf? (y/N)y
 Traceback (most recent call last):
-  File "ProtonDB-to-Steam-Library.py", line 220, in 
+  File "ProtonDB-Tags.py", line 220, in 
     main(arguments)
-  File "ProtonDB-to-Steam-Library.py", line 207, in main
+  File "ProtonDB-Tags.py", line 207, in main
     check = input("Would you like to save sharedconfig.vdf? (y/N)")
   File "", line 1, in 
     NameError: name 'y' is not defined
