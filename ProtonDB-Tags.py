@@ -229,12 +229,10 @@ def main(args):
         # If the app is native, no need to check ProtonDB
         if check_native and is_native(app_id):
             protondb_rating = "native"
-            print("{} native".format(app_id))
         else:
             # Get the ProtonDB rating for the app, if ProtonDB 404's it means no rating is available for the game and likely native
             try:
                 protondb_rating = get_protondb_rating(app_id)
-                print("{} {}".format(app_id, protondb_rating))
             except ProtonDBError:
                 continue
 
@@ -242,7 +240,7 @@ def main(args):
 
         # The 1,2,etc. force the better ranks to be at the top, as Steam sorts these alphanumerically
         possible_ranks = {
-            "native":   "ProtonDB Ranking: 0 Native", # This should probably be changed eventually, but this is to allow us to scan the tags for an existing one.
+            "native":   "ProtonDB Ranking: 0 Native",
             "platinum": "ProtonDB Ranking: 1 Platinum",
             "gold":     "ProtonDB Ranking: 2 Gold",
             "silver":   "ProtonDB Ranking: 3 Silver",
@@ -252,11 +250,33 @@ def main(args):
             "borked":   "ProtonDB Ranking: 7 Borked",
         }
 
-        # Try to inject the tag into the vdfDict, if the returned rating from ProtonDB isn't a key above it will error out
-        if protondb_rating in possible_ranks:
-            apps[app_id]["tags"][tag_num] = possible_ranks[protondb_rating]
-        else:
-            print("Unknown ProtonDB rating: {}\n Please report this on GitHub!".format(protondb_rating))
+
+        new_rank = True
+        try:
+            old_tag = apps[app_id]["tags"][tag_num]
+            old_key = ""
+
+            # Get the old key (protondb ranking)
+            for key, value in possible_ranks.items():
+                if value == old_tag:
+                    old_key = key
+                    break
+
+            # No change since last run, we don't need to output or save it
+            if old_key == protondb_rating:
+                new_rank = False
+            else:
+                print("{} {} => {}".format(app_id, old_key, protondb_rating))
+        # If it throws a key error it is a new game to rank
+        except KeyError:
+            print("{} {}".format(app_id, protondb_rating))
+
+        if new_rank:
+            # Try to inject the tag into the vdfDict, if the returned rating from ProtonDB isn't a key above it will error out
+            if protondb_rating in possible_ranks:
+                apps[app_id]["tags"][tag_num] = possible_ranks[protondb_rating]
+            else:
+                print("Unknown ProtonDB rating: {}\n Please report this on GitHub!".format(protondb_rating))
 
 
     # no_save will be True if -n is passed
