@@ -1,6 +1,6 @@
-# ProtonDB-Tags [![Build Status](https://travis-ci.com/CorruptComputer/ProtonDB-to-Steam-Library.svg?branch=master)](https://travis-ci.com/CorruptComputer/ProtonDB-to-Steam-Library)[<img src="https://discordapp.com/assets/f8389ca1a741a115313bede9ac02e2c0.svg" width="45" height="45" alt="Discord" title="Discord">](https://discord.gg/87fJcCY)
+# ProtonDB-Tags [![Build Status](https://travis-ci.com/CorruptComputer/ProtonDB-Tags.svg?branch=master)](https://travis-ci.com/CorruptComputer/ProtonDB-Tags)[<img src="https://discordapp.com/assets/f8389ca1a741a115313bede9ac02e2c0.svg" width="45" height="45" alt="Discord" title="Discord">](https://discord.gg/87fJcCY)
 
-**Just a quick heads up, the script has been renamed to ProtonDB-Tags and the repo will soon follow on August 19th!**
+**Just a quick heads up, the script has been renamed to ProtonDB-Tags.py!**
 
 This is just a small python script to pull ratings from ProtonDB and import them into your Steam library as tags.
 
