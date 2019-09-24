@@ -19,7 +19,7 @@ class ProtonDBError(Exception):
 # return: (boolean) If the game is native                                     #
 ###############################################################################
 def is_native(app_id):
-    
+
     # Check for $XDG_CACHE_HOME before defaulting to $HOME.
     cache_path = os.path.expandvars("$XDG_CACHE_HOME")
     if not os.path.exists(cache_path):
@@ -29,7 +29,7 @@ def is_native(app_id):
     cache_path = os.path.join(cache_path, ".cache/ProtonDB-Tags")
     if not os.path.isdir(cache_path):
         os.makedirs(cache_path)
-    
+
     # Finally add our file to the end of the path.
     cache_path = os.path.join(cache_path, "steamNativeCache.json")
     cache = {}
