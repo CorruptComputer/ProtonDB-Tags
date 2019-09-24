@@ -19,7 +19,19 @@ class ProtonDBError(Exception):
 # return: (boolean) If the game is native                                     #
 ###############################################################################
 def is_native(app_id):
-    cache_path = os.path.expanduser("./steamNativeCache.json")
+    
+    # Check for $XDG_CACHE_HOME before defaulting to $HOME.
+    cache_path = os.path.expandvars("$XDG_CACHE_HOME")
+    if not os.path.exists(cache_path):
+        cache_path = os.path.expandvars("$HOME")
+
+    # Check if the path we want exists, if not create it.
+    cache_path = os.path.join(cache_path, ".cache/ProtonDB-Tags")
+    if not os.path.isdir(cache_path):
+        os.makedirs(cache_path)
+    
+    # Finally add our file to the end of the path.
+    cache_path = os.path.join(cache_path, "steamNativeCache.json")
     cache = {}
 
     if os.path.exists(cache_path):
@@ -29,6 +41,7 @@ def is_native(app_id):
             return cache[app_id] in ["True", "true", True]
     else:
         print("Steam native cache not found.")
+        print("Cache will be created here: " + cache_path)
 
 
     # Thanks to u/FurbyOnSteroid for finding this!
@@ -39,7 +52,7 @@ def is_native(app_id):
     time.sleep(1)
 
     if steam_api_result.status_code != 200:
-        print("Error pulling info from Steam API for {}. You're probably being rate-limited".format(app_id))
+        print("Error pulling info from Steam API for {}. You're probably being rate-limited or the store page no longer exists.".format(app_id))
         return False
 
     steam_api_json = steam_api_result.json()
