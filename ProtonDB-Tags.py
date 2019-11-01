@@ -5,6 +5,7 @@ import os
 import sys
 import time
 import json
+import webbrowser
 import vdf
 import requests
 
@@ -300,6 +301,10 @@ def main(args):
             # Output the edited vdfDict back to the original location
             with open(sharedconfig_path, 'w') as sharedconfig_vdf:
                 vdf.dump(sharedconfig, sharedconfig_vdf, pretty=True)
+
+            # Workaround provided by Valve for the new library
+            url = "steam://resetcollections"
+            webbrowser.open(url, new=0, autoraise=True)
 
 # Run it
 if __name__ == "__main__":
