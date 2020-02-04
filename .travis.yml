@@ -1,10 +1,10 @@
-dist: xenial   # required for Python >= 3.7
+dist: bionic   # required for Python 3.8, https://docs.travis-ci.com/user/reference/bionic/#python-support
 language: python
 cache: pip
 python: 
-  - "3.5"
   - "3.6"
   - "3.7"
+  - "3.8"
 
 install: 
   - pip --disable-pip-version-check install -r requirements.txt
