@@ -306,7 +306,7 @@ def main(args):
 
             # Workaround provided by Valve for the new library
             url = "steam://resetcollections"
-            if sys.platform=="win32":
+            if sys.platform == "win32":
                 command = "start "
             else:
                 command = "xdg-open "
