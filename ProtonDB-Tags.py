@@ -5,7 +5,6 @@ import os
 import sys
 import time
 import json
-import webbrowser
 import vdf
 import requests
 
@@ -304,7 +303,13 @@ def main(args):
 
             # Workaround provided by Valve for the new library
             url = "steam://resetcollections"
-            webbrowser.open(url, new=0, autoraise=True)
+            input("Open steam, then press enter to continue")
+            if sys.platform=="win32":
+                command = "start "
+            else:
+                command = "xdg-open "
+            input("Please launch Steam and then press Enter...")
+            os.system(command + url)
 
 # Run it
 if __name__ == "__main__":
