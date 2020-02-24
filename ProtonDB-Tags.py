@@ -234,7 +234,7 @@ def main(args):
     appCount = len(apps)
     print("Found {} Steam games".format(appCount))
 
-    for count, app_id in enumerate(apps):
+    for count, app_id in enumerate(apps, 1):
         # This has to be here because some Steam AppID's are strings of text, which ProtonDB does not support. Check test01.vdf line 278 for an example.
         try:
             int(app_id)
