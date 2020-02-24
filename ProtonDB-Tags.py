@@ -231,6 +231,8 @@ def main(args):
     # This makes the code slightly cleaner
     apps = sharedconfig[configstore]["Software"]["Valve"]["Steam"][get_apps_key(sharedconfig, configstore)]
 
+    print("Found {} Steam games".format(len(apps)))
+
     for app_id in apps:
         # This has to be here because some Steam AppID's are strings of text, which ProtonDB does not support. Check test01.vdf line 278 for an example.
         try:
