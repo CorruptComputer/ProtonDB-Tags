@@ -55,11 +55,10 @@ If you would like to make a PR all I ask is that you are also open to feedback o
 ### Troubleshooting
 
 If you are finding that only some of your Proton compatible games are being categorized try this:
-1. Select all of the games in your library
-2. Right click -> Set Categories...
-3. Add some random category to them all (you can remove this later)
-4. Close Steam to force it to write all of your games to the sharedconfig.vdf file
-5. Try running the script again
+1. Select all of the uncategorized games in your library
+2. Right click -> Add to -> ProtonDB Ranking: 7 Borked
+3. File -> Exit Steam to force it to write all of your games to the sharedconfig.vdf file
+4. Try running the script again
 
 Please keep in mind that most Linux Native games will not be categorized without the `--check-native` flag, as ProtonDB doesn't return anything for them.
 
