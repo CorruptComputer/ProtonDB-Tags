@@ -305,13 +305,12 @@ def main(args):
 
             # Workaround provided by Valve for the new library
             url = "steam://resetcollections"
-            input("Open steam, then press enter to continue")
             if sys.platform=="win32":
                 command = "start "
             else:
                 command = "xdg-open "
-            input("Please launch Steam and then press Enter...")
-            os.system(command + url)
+            input("Please launch Steam, then press Enter to continue...")
+            os.system(command + url) #Reset Collections
 
 # Run it
 if __name__ == "__main__":
