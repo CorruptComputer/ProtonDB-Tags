@@ -231,9 +231,10 @@ def main(args):
     # This makes the code slightly cleaner
     apps = sharedconfig[configstore]["Software"]["Valve"]["Steam"][get_apps_key(sharedconfig, configstore)]
 
-    print("Found {} Steam games".format(len(apps)))
+    appCount = len(apps)
+    print("Found {} Steam games".format(appCount))
 
-    for app_id in apps:
+    for count, app_id in enumerate(apps):
         # This has to be here because some Steam AppID's are strings of text, which ProtonDB does not support. Check test01.vdf line 278 for an example.
         try:
             int(app_id)
@@ -281,7 +282,7 @@ def main(args):
             if old_key == protondb_rating:
                 new_rank = False
             else:
-                print("{} {} => {}".format(app_id, old_key, protondb_rating))
+                print("{} {} => {} ({} of {})".format(app_id, old_key, protondb_rating, count, appCount))
         # If it throws a key error it is a new game to rank
         except KeyError:
             print("{} {}".format(app_id, protondb_rating))
