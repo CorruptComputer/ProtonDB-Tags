@@ -48,8 +48,8 @@ def is_native(app_id):
     # https://www.reddit.com/r/linux_gaming/comments/bxqsvs/protondb_to_steam_library_tool/eqal68r/
     api_url = "https://store.steampowered.com/api/appdetails?appids={}&filters=platforms".format(app_id)
     steam_api_result = requests.get(api_url)
-    # Wait 1 second before continuing, as Steam only allows 10 requests per 10 seconds, otherwise you get rate limited for a few minutes.
-    time.sleep(1)
+    # Wait 1.3 seconds before continuing, as Steam only allows 10 requests per 10 seconds, otherwise you get rate limited for a few minutes.
+    time.sleep(1.3)
 
     if steam_api_result.status_code != 200:
         print("Error pulling info from Steam API for {}. You're probably being rate-limited or the store page no longer exists.".format(app_id))
