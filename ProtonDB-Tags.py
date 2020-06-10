@@ -304,7 +304,7 @@ def main(args):
 
             # Workaround provided by Valve for the new library
             url = "steam://resetcollections"
-            webbrowser.open(url, new=0, autoraise=True)
+            webbrowser.get('firefox').open(url, new=0, autoraise=True)
 
 # Run it
 if __name__ == "__main__":
