@@ -23,10 +23,10 @@ def is_native(app_id):
     # Check for $XDG_CACHE_HOME before defaulting to $HOME.
     cache_path = os.path.expandvars("$XDG_CACHE_HOME")
     if not os.path.exists(cache_path):
-        cache_path = os.path.expandvars("$HOME")
+        cache_path = os.path.expandvars("$HOME/.cache")
 
     # Check if the path we want exists, if not create it.
-    cache_path = os.path.join(cache_path, ".cache/ProtonDB-Tags")
+    cache_path = os.path.join(cache_path, "ProtonDB-Tags")
     if not os.path.isdir(cache_path):
         os.makedirs(cache_path)
 
