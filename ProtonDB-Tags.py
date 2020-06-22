@@ -25,6 +25,17 @@ def is_native(app_id):
     if not os.path.exists(cache_path):
         cache_path = os.path.expandvars("$HOME/.cache")
 
+    # If the old cache path exists, then we need to move the files from there and remove it.
+    # This should only ever happen if $XDG_CACHE_HOME was set and script run pre 1.1.1.
+    if os.path.exists(os.path.join(cache_path, ".cache/ProtonDB-Tags")):
+        print("Old cache path detected, moving cache to new location...")
+        old_cache_path = os.path.join(cache_path, ".cache/ProtonDB-Tags")
+        new_cache_path = os.path.join(cache_path, "ProtonDB-Tags")
+        os.rename(old_cache_path, new_cache_path)
+        if len(os.listdir(os.path.join(cache_path, ".cache"))) == 0:
+            print("Old cache path '{}' is now empty, removing it...".format(os.path.join(cache_path, ".cache/ProtonDB-Tags")))
+            os.rmdir(os.path.join(cache_path, ".cache"))
+
     # Check if the path we want exists, if not create it.
     cache_path = os.path.join(cache_path, "ProtonDB-Tags")
     if not os.path.isdir(cache_path):
