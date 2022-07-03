@@ -12,6 +12,9 @@ import requests
 class ProtonDBError(Exception):
     pass
 
+class SteamApiError(Exception):
+    pass
+
 
 ###############################################################################
 #    Checks if the game has Native Linux support from the Steam Store API     #
@@ -52,7 +55,7 @@ def is_native(app_id):
             return cache[app_id] in ["True", "true", True]
     else:
         print("Steam native cache not found.")
-        print("Cache will be created here: " + cache_path)
+        print("Cache will be created here: {}".format(cache_path))
 
 
     # Thanks to u/FurbyOnSteroid for finding this!
@@ -108,7 +111,7 @@ def get_steam_id():
             return config["steam_id"]
     else:
         print("Existing config not found.")
-        print("Config will be created here: " + config_path)
+        print("Config will be created here: {}".format(config_path))
 
     print("Please go here to find your steamID64: https://steamid.io")
 
@@ -149,7 +152,7 @@ def get_steam_api_key():
             return config["steam_api_key"]
     else:
         print("Existing config not found.")
-        print("Config will be created here: " + config_path)
+        print("Config will be created here: {}".format(config_path))
 
     print("Due to recent changes in Steam, it has become more difficult to get an accurate list the games in your library.")
     print("In order to work around this, we can use the Steam API to get this information directly.")
@@ -199,15 +202,31 @@ def get_apps_list(sharedconfig, fetch_games):
     for key in apps_keys:
         if key in sharedconfig[configstore][software][valve][steam]:
             apps = key
-    
+
     if (fetch_games):
         api_key = get_steam_api_key()
         steam_id = get_steam_id()
 
-        # TODO: finish this
-        # requests.get("".format())
+        apps_list = {}
 
-    return sharedconfig[configstore][software][valve][steam][apps]
+        # TODO: finish this
+        get_owned_games_result = requests.get("http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key={}&steamid={}&include_played_free_games=true&format=json".format(api_key, steam_id))
+        if get_owned_games_result.status_code != 200:
+            raise SteamApiError()
+        
+        owned_games_json = get_owned_games_result.json()["response"]
+
+        for game in owned_games_json["games"]:
+            apps_list[str(game["appid"])] = {}
+            apps_list[str(game["appid"])]["tags"] = {}
+            apps_list[str(game["appid"])]["tags"]["0"] = "ProtonDB Ranking: 6 Unrated"
+
+        print("Found {} games from the Steam API.".format(owned_games_json["game_count"]))
+        sharedconfig[configstore][software][valve][steam][apps] = apps_list
+    else:
+        apps_list = sharedconfig[configstore][software][valve][steam][apps]
+
+    return apps_list
 
 ###############################################################################
 #             Gets the rating for the game from ProtonDB's API                #
@@ -298,7 +317,7 @@ def get_tag_number(app):
     # If the tags key wasn't found, that means there are no tags for the game
     else:
         tag_num = "0"
-        app["tags"] = vdf.VDFDict()
+        app["tags"] = {}
 
     return tag_num
 
@@ -425,7 +444,7 @@ if __name__ == "__main__":
     PARSER = argparse.ArgumentParser(description="Add Steam games to categories based on ProtonDB rankings")
     PARSER.add_argument("-c", "--check-native", dest="check_native", action="store_true", default=False, help="Check for native Linux support (WILL add 1+ second per game to lookup if not cached)")
     PARSER.add_argument("-n", "--no-save", dest="no_save", action="store_true", default=False, help="Disable the save option at the end to allow for unattended testing")
-    PARSER.add_argument("-f", "--fetch-games", dest="fetch_games", default=False, help="Fetch your games list from your Steam account")
+    PARSER.add_argument("-f", "--fetch-games", dest="fetch_games", action="store_true", default=False, help="Fetch your games list from your Steam account")
     PARSER.add_argument("-s", "--sharedconfig", dest="sharedconfig_path", help="Specify a custom location for sharedconfig.vdf")
     ARGUMENTS = PARSER.parse_args()
 
