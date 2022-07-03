@@ -10,7 +10,7 @@ Here is a screenshot which shows how it looks once ran:
 
 This script requires Python 3, you can check your python version with `python --version`. If your default is Python 2 then you'll need to check with your distro's documentation and install Python 3, then replace all of the below commands with `python3` and `pip3`.
 
-You'll need to install [vdf](https://github.com/ValvePython/vdf) and [requests](https://2.python-requests.org/en/master/) before this can run.
+You'll need to install [vdf](https://github.com/ValvePython/vdf) and [requests](https://requests.readthedocs.io/en/latest/) before this can run.
 You can install them via pip with:
 ```bash
 pip install requests vdf
