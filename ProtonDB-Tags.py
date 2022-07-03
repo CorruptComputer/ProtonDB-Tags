@@ -210,7 +210,7 @@ def get_apps_list(sharedconfig, fetch_games):
         apps_list = {}
 
         # TODO: finish this
-        get_owned_games_result = requests.get("http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key={}&steamid={}&include_played_free_games=true&format=json".format(api_key, steam_id))
+        get_owned_games_result = requests.get("https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key={}&steamid={}&include_played_free_games=true&format=json".format(api_key, steam_id))
         if get_owned_games_result.status_code != 200:
             raise SteamApiError()
         
