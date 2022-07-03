@@ -82,34 +82,132 @@ def is_native(app_id):
     return False
 
 
+# TODO Fix this comment
 ###############################################################################
 #   Checks which ConfigStore you have, some are Local and some are Roaming    #
 # sharedconfig: (vdf) The vdf dict to check                                   #
 # return: (str) The ConfigStore key to use for the vdf                        #
 ###############################################################################
-def get_configstore_for_vdf(sharedconfig):
-    possible_keys = ["UserLocalConfigStore", "UserRoamingConfigStore"]
-    for key in possible_keys:
-        if key in sharedconfig:
-            return key
+def get_steam_id():
+    config_path = os.path.expandvars("$XDG_CONFIG_HOME")
+    if not os.path.exists(config_path):
+        config_path = os.path.expandvars("$HOME/.config")
 
-    sys.exit("Could not load sharedconfig.vdf. Please submit an issue on GitHub and attach your sharedconfig.vdf!")
+    config_path = os.path.join(config_path, "ProtonDB-Tags")
+    if not os.path.isdir(config_path):
+        os.makedirs(config_path)
+    
+    # Finally add our file to the end of the path.
+    config_path = os.path.join(config_path, "config.json")
+    config = {}
 
+    if os.path.exists(config_path):
+        with open(config_path) as config_file:
+            config = json.load(config_file)
+        if "steam_id" in config:
+            return config["steam_id"]
+    else:
+        print("Existing config not found.")
+        print("Config will be created here: " + config_path)
 
+    print("Please go here to find your steamID64: https://steamid.io")
+
+    steam_id = input("steamID64: ")
+
+    #TODO: validate the steamID64 is valid
+
+    config["steam_id"] = steam_id
+
+    with open(config_path, 'w') as config_file:
+            json.dump(config, config_file)
+    
+    return steam_id
+
+# TODO Fix this comment
 ###############################################################################
-#               Get the correct apps key for the sharedconfig                 #
+#   Checks which ConfigStore you have, some are Local and some are Roaming    #
 # sharedconfig: (vdf) The vdf dict to check                                   #
-# configstore: (str) The ConfigStore key to use for the vdf                   #
-# return: (str) The correct key for apps in the vdf                           #
+# return: (str) The ConfigStore key to use for the vdf                        #
 ###############################################################################
-def get_apps_key(sharedconfig, configstore):
-    possible_keys = ["apps", "Apps"]
-    for key in possible_keys:
-        if key in sharedconfig[configstore]["Software"]["Valve"]["Steam"]:
-            return key
+def get_steam_api_key():
+    config_path = os.path.expandvars("$XDG_CONFIG_HOME")
+    if not os.path.exists(config_path):
+        config_path = os.path.expandvars("$HOME/.config")
 
-    sys.exit("Could not find the apps. Try adding everything to a category before running.")
+    config_path = os.path.join(config_path, "ProtonDB-Tags")
+    if not os.path.isdir(config_path):
+        os.makedirs(config_path)
+    
+    # Finally add our file to the end of the path.
+    config_path = os.path.join(config_path, "config.json")
+    config = {}
 
+    if os.path.exists(config_path):
+        with open(config_path) as config_file:
+            config = json.load(config_file)
+        if "steam_api_key" in config:
+            return config["steam_api_key"]
+    else:
+        print("Existing config not found.")
+        print("Config will be created here: " + config_path)
+
+    print("Due to recent changes in Steam, it has become more difficult to get an accurate list the games in your library.")
+    print("In order to work around this, we can use the Steam API to get this information directly.")
+    print("Please go here to generate an API key: https://steamcommunity.com/dev/apikey")
+    print("\nThis API key will be saved in the config for ProtonDB-Tags on your PC.")
+
+    api_key = input("Api key: ")
+
+    #TODO: validate the API key works
+
+    config["steam_api_key"] = api_key
+
+    with open(config_path, 'w') as config_file:
+            json.dump(config, config_file)
+    
+    return api_key
+    
+
+# TODO Fix this comment
+###############################################################################
+#   Checks which ConfigStore you have, some are Local and some are Roaming    #
+# sharedconfig: (vdf) The vdf dict to check                                   #
+# return: (str) The ConfigStore key to use for the vdf                        #
+###############################################################################
+def get_apps_list(sharedconfig, fetch_games):
+    configstore_keys = ["UserLocalConfigStore", "UserRoamingConfigStore"]
+    for key in configstore_keys:
+        if key in sharedconfig:
+            configstore = key
+
+    software_keys = ["software", "Software"]
+    for key in software_keys:
+        if key in sharedconfig[configstore]:
+            software = key
+
+    valve_keys = ["valve", "Valve"]
+    for key in valve_keys:
+        if key in sharedconfig[configstore][software]:
+            valve = key
+
+    steam_keys = ["steam", "Steam"]
+    for key in steam_keys:
+        if key in sharedconfig[configstore][software][valve]:
+            steam = key
+
+    apps_keys = ["apps", "Apps"]
+    for key in apps_keys:
+        if key in sharedconfig[configstore][software][valve][steam]:
+            apps = key
+    
+    if (fetch_games):
+        api_key = get_steam_api_key()
+        steam_id = get_steam_id()
+
+        # TODO: finish this
+        # requests.get("".format())
+
+    return sharedconfig[configstore][software][valve][steam][apps]
 
 ###############################################################################
 #             Gets the rating for the game from ProtonDB's API                #
@@ -213,6 +311,7 @@ def main(args):
     sharedconfig_path = ""
     no_save = args.no_save
     check_native = args.check_native
+    fetch_games = args.fetch_games
 
     if args.sharedconfig_path:
         # With ~ for user home
@@ -236,11 +335,8 @@ def main(args):
     with open(sharedconfig_path) as sharedconfig_vdf:
         sharedconfig = vdf.load(sharedconfig_vdf)
 
-    # Get which version of the configstore you have
-    configstore = get_configstore_for_vdf(sharedconfig)
-
     # This makes the code slightly cleaner
-    apps = sharedconfig[configstore]["Software"]["Valve"]["Steam"][get_apps_key(sharedconfig, configstore)]
+    apps = get_apps_list(sharedconfig, fetch_games)
 
     appCount = len(apps)
     print("Found {} Steam games".format(appCount))
@@ -320,7 +416,7 @@ def main(args):
             if sys.platform == "win32":
                 command = "start "
             else:
-                command = "xdg-open "
+                command = "steam "
             input("Please launch Steam, then press Enter to continue...")
             os.system(command + url) #Reset Collections
 
@@ -329,6 +425,7 @@ if __name__ == "__main__":
     PARSER = argparse.ArgumentParser(description="Add Steam games to categories based on ProtonDB rankings")
     PARSER.add_argument("-c", "--check-native", dest="check_native", action="store_true", default=False, help="Check for native Linux support (WILL add 1+ second per game to lookup if not cached)")
     PARSER.add_argument("-n", "--no-save", dest="no_save", action="store_true", default=False, help="Disable the save option at the end to allow for unattended testing")
+    PARSER.add_argument("-f", "--fetch-games", dest="fetch_games", default=False, help="Fetch your games list from your Steam account")
     PARSER.add_argument("-s", "--sharedconfig", dest="sharedconfig_path", help="Specify a custom location for sharedconfig.vdf")
     ARGUMENTS = PARSER.parse_args()
 
