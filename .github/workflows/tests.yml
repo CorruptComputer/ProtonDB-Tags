@@ -27,11 +27,11 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
-    - name: Test with pytest
+    - name: Run pylint
       run: |
         pylint *.py **/*.py --disable=line-too-long,invalid-name,missing-docstring,bare-except,too-many-branches,too-many-locals,too-many-statements
     
-    - name: Lint with flake8
+    - name: Run test cases
       run: |
         python ProtonDB-Tags.py --sharedconfig ./test-sharedconfigs/test01.vdf --check-native --no-save
         python ProtonDB-Tags.py --sharedconfig ./test-sharedconfigs/test02.vdf --no-save
