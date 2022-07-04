@@ -1,4 +1,4 @@
-# ProtonDB-Tags [![Build Status](https://travis-ci.com/CorruptComputer/ProtonDB-Tags.svg?branch=master)](https://travis-ci.com/CorruptComputer/ProtonDB-Tags)
+# ProtonDB-Tags [![Tests](https://github.com/CorruptComputer/ProtonDB-Tags/actions/workflows/tests.yml/badge.svg)](https://github.com/CorruptComputer/ProtonDB-Tags/actions/workflows/tests.yml)
 
 This is just a small python script to pull ratings from ProtonDB and import them into your Steam library as tags.
 

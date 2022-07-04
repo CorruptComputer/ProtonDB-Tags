@@ -25,7 +25,7 @@ class SteamApiError(Exception):
 ###############################################################################
 def is_native(app_id):
     cache_manager = CacheManager()
-    (found_in_cache, value) = cache_manager.GetFromSteamNativeCache(app_id)
+    (found_in_cache, value) = cache_manager.get_from_steam_native_cache(app_id)
     if found_in_cache:
         return value
 
@@ -45,7 +45,7 @@ def is_native(app_id):
     # If steam can't find the game it will be False
     if steam_api_json[app_id]["success"] in ["True", "true", True]:
         is_native_game = steam_api_json[app_id]["data"]["platforms"]["linux"] in ["True", "true", True]
-        cache_manager.AddToSteamNativeCache(app_id, is_native_game)
+        cache_manager.add_to_steam_native_cache(app_id, is_native_game)
 
         return is_native_game
 
@@ -85,8 +85,8 @@ def get_apps_list(sharedconfig, fetch_games):
 
     if fetch_games:
         config_manager = ConfigManager()
-        api_key = config_manager.GetSteamApiKey()
-        steam_id = config_manager.GetSteamId()
+        api_key = config_manager.get_steam_api_key()
+        steam_id = config_manager.get_steam_id()
 
         apps_list = {}
 
@@ -115,7 +115,7 @@ def get_apps_list(sharedconfig, fetch_games):
 ###############################################################################
 def get_protondb_rating(app_id):
     cache_manager = CacheManager()
-    (found_in_cache, value) = cache_manager.GetFromProtonDBCache(app_id)
+    (found_in_cache, value) = cache_manager.get_from_protondb_cache(app_id)
     if found_in_cache:
         return value
 
@@ -126,7 +126,7 @@ def get_protondb_rating(app_id):
 
     # use trendingTier as this reflects a more up-to-date rating rather than an all-time rating
     protondb_ranking = protondb_api_json["trendingTier"]
-    cache_manager.AddToProtonDBCache(app_id, protondb_ranking)
+    cache_manager.add_to_protondb_cache(app_id, protondb_ranking)
 
     return protondb_ranking
 

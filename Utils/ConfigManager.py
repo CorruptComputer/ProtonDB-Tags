@@ -3,7 +3,7 @@ import os
 
 
 class ConfigManager:
-    def _getConfigPath(self):
+    def _get_config_path(self):
         config_path = os.path.expandvars("$XDG_CONFIG_HOME")
         if not os.path.exists(config_path):
             config_path = os.path.expandvars("$HOME/.config")
@@ -14,8 +14,8 @@ class ConfigManager:
 
         return config_path
 
-    def GetSteamId(self):
-        config_path = os.path.join(self._getConfigPath(), "config.json")
+    def get_steam_id(self):
+        config_path = os.path.join(self._get_config_path(), "config.json")
         config = {}
 
         if os.path.exists(config_path):
@@ -38,8 +38,8 @@ class ConfigManager:
 
         return steam_id
 
-    def GetSteamApiKey(self):
-        config_path = os.path.join(self._getConfigPath(), "config.json")
+    def get_steam_api_key(self):
+        config_path = os.path.join(self._get_config_path(), "config.json")
         config = {}
 
         if os.path.exists(config_path):

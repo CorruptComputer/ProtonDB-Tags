@@ -4,7 +4,7 @@ import random
 import time
 
 class CacheManager:
-    def _migrateOldCachePaths(self, cache_path):
+    def _migrate_old_cache_paths(self, cache_path):
         # If the old cache path exists, then we need to move the files from there and remove it.
         # This should only ever happen if $XDG_CACHE_HOME was set and script run pre 1.1.1.
         if os.path.exists(os.path.join(cache_path, ".cache/ProtonDB-Tags")):
@@ -16,12 +16,12 @@ class CacheManager:
                 print(f"Old cache path '{os.path.join(cache_path, '.cache/ProtonDB-Tags')}' is now empty, removing it...")
                 os.rmdir(os.path.join(cache_path, ".cache"))
 
-    def _getCachePath(self):
+    def _get_cache_path(self):
         cache_path = os.path.expandvars("$XDG_CACHE_HOME")
         if not os.path.exists(cache_path):
             cache_path = os.path.expandvars("$HOME/.cache")
 
-        self._migrateOldCachePaths(cache_path)
+        self._migrate_old_cache_paths(cache_path)
 
         cache_path = os.path.join(cache_path, "ProtonDB-Tags")
         if not os.path.isdir(cache_path):
@@ -29,8 +29,8 @@ class CacheManager:
 
         return cache_path
 
-    def _getValueFromCache(self, cache_file, app_id):
-        cache_path = os.path.join(self._getCachePath(), cache_file)
+    def _get_value_from_cache(self, cache_file, app_id):
+        cache_path = os.path.join(self._get_cache_path(), cache_file)
         found_in_cache = False
         value = False
 
@@ -45,8 +45,8 @@ class CacheManager:
 
         return (found_in_cache, value)
 
-    def _addValueToCache(self, cache_file, app_id, value):
-        cache_path = os.path.join(self._getCachePath(), cache_file)
+    def _add_value_to_cache(self, cache_file, app_id, value):
+        cache_path = os.path.join(self._get_cache_path(), cache_file)
         cache = {}
 
         if os.path.exists(cache_path):
@@ -63,14 +63,14 @@ class CacheManager:
         with open(cache_path, mode='w', encoding="utf-8") as cache_json:
             json.dump(cache, cache_json)
 
-    def GetFromSteamNativeCache(self, app_id):
-        return self._getValueFromCache("steamNativeCache.json", app_id)
+    def get_from_steam_native_cache(self, app_id):
+        return self._get_value_from_cache("steamNativeCache.json", app_id)
 
-    def AddToSteamNativeCache(self, app_id, value):
-        self._addValueToCache("steamNativeCache.json", app_id, value)
+    def add_to_steam_native_cache(self, app_id, value):
+        self._add_value_to_cache("steamNativeCache.json", app_id, value)
 
-    def GetFromProtonDBCache(self, app_id):
-        return self._getValueFromCache("protonDBCache.json", app_id)
+    def get_from_protondb_cache(self, app_id):
+        return self._get_value_from_cache("protonDBCache.json", app_id)
 
-    def AddToProtonDBCache(self, app_id, value):
-        self._addValueToCache("protonDBCache.json", app_id, value)
+    def add_to_protondb_cache(self, app_id, value):
+        self._add_value_to_cache("protonDBCache.json", app_id, value)
