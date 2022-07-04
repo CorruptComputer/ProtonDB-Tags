@@ -257,7 +257,7 @@ def main(args):
             continue
 
         if count > 0 and count % 10 == 0:
-             print(f"Processed ({count} of {app_count}) games...")
+            print(f"Processed ({count} of {app_count}) games...")
 
         protondb_rating = ""
         # If the app is native, no need to check ProtonDB
