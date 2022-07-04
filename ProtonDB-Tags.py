@@ -256,6 +256,9 @@ def main(args):
         except ValueError:
             continue
 
+        if count > 0 and count % 10 == 0:
+             print(f"Processed ({count} of {app_count}) games...")
+
         protondb_rating = ""
         # If the app is native, no need to check ProtonDB
         if check_native and is_native(app_id):
