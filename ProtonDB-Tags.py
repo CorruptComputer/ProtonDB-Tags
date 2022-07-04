@@ -83,28 +83,28 @@ def get_apps_list(sharedconfig, fetch_games):
         if key in sharedconfig[configstore][software][valve][steam]:
             apps = key
 
+    apps_list = sharedconfig[configstore][software][valve][steam][apps]
+
     if fetch_games:
         config_manager = ConfigManager()
         api_key = config_manager.get_steam_api_key()
         steam_id = config_manager.get_steam_id()
-
-        apps_list = {}
 
         get_owned_games_result = requests.get(f"https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key={api_key}&steamid={steam_id}&include_played_free_games=true&format=json")
         if get_owned_games_result.status_code != 200:
             raise SteamApiError()
 
         owned_games_json = get_owned_games_result.json()["response"]
+        new_games = 0
 
         for game in owned_games_json["games"]:
-            apps_list[str(game["appid"])] = {}
-            apps_list[str(game["appid"])]["tags"] = {}
-            apps_list[str(game["appid"])]["tags"]["0"] = "ProtonDB Ranking: 6 Unrated"
+            if str(game["appid"]) not in apps_list:
+                apps_list[str(game["appid"])] = {}
+                apps_list[str(game["appid"])]["tags"] = {}
+                apps_list[str(game["appid"])]["tags"]["0"] = "ProtonDB Ranking: 6 Unrated"
+                new_games += 1
 
-        print(f"Found {owned_games_json['game_count']} games from the Steam API.")
-        sharedconfig[configstore][software][valve][steam][apps] = apps_list
-    else:
-        apps_list = sharedconfig[configstore][software][valve][steam][apps]
+        print(f"Found {new_games} games from the Steam API.")
 
     return apps_list
 
