@@ -8,6 +8,9 @@ import json
 import vdf
 import requests
 
+from Utils.CacheManager import CacheManager
+from Utils.ConfigManager import ConfigManager
+
 
 class ProtonDBError(Exception):
     pass
@@ -22,41 +25,10 @@ class SteamApiError(Exception):
 # return: (boolean) If the game is native                                     #
 ###############################################################################
 def is_native(app_id):
-
-    # Check for $XDG_CACHE_HOME before defaulting to $HOME.
-    cache_path = os.path.expandvars("$XDG_CACHE_HOME")
-    if not os.path.exists(cache_path):
-        cache_path = os.path.expandvars("$HOME/.cache")
-
-    # If the old cache path exists, then we need to move the files from there and remove it.
-    # This should only ever happen if $XDG_CACHE_HOME was set and script run pre 1.1.1.
-    if os.path.exists(os.path.join(cache_path, ".cache/ProtonDB-Tags")):
-        print("Old cache path detected, moving cache to new location...")
-        old_cache_path = os.path.join(cache_path, ".cache/ProtonDB-Tags")
-        new_cache_path = os.path.join(cache_path, "ProtonDB-Tags")
-        os.rename(old_cache_path, new_cache_path)
-        if len(os.listdir(os.path.join(cache_path, ".cache"))) == 0:
-            print("Old cache path '{}' is now empty, removing it...".format(os.path.join(cache_path, ".cache/ProtonDB-Tags")))
-            os.rmdir(os.path.join(cache_path, ".cache"))
-
-    # Check if the path we want exists, if not create it.
-    cache_path = os.path.join(cache_path, "ProtonDB-Tags")
-    if not os.path.isdir(cache_path):
-        os.makedirs(cache_path)
-
-    # Finally add our file to the end of the path.
-    cache_path = os.path.join(cache_path, "steamNativeCache.json")
-    cache = {}
-
-    if os.path.exists(cache_path):
-        with open(cache_path) as cache_file:
-            cache = json.load(cache_file)
-        if app_id in cache:
-            return cache[app_id] in ["True", "true", True]
-    else:
-        print("Steam native cache not found.")
-        print("Cache will be created here: {}".format(cache_path))
-
+    cache_manager = CacheManager()
+    (found_in_cache, value) = cache_manager.GetFromSteamNativeCache(app_id)
+    if found_in_cache:
+        return value
 
     # Thanks to u/FurbyOnSteroid for finding this!
     # https://www.reddit.com/r/linux_gaming/comments/bxqsvs/protondb_to_steam_library_tool/eqal68r/
@@ -73,109 +45,18 @@ def is_native(app_id):
 
     # If steam can't find the game it will be False
     if steam_api_json[app_id]["success"] in ["True", "true", True]:
-        if not os.path.exists(cache_path):
-            print("Creating Steam native cache...")
         is_native_game = steam_api_json[app_id]["data"]["platforms"]["linux"] in ["True", "true", True]
-        cache[app_id] = str(is_native_game)
-        with open(cache_path, 'w') as cache_file:
-            json.dump(cache, cache_file)
+        cache_manager.AddToSteamNativeCache(app_id, is_native_game)
 
         return is_native_game
 
     return False
 
-
-# TODO Fix this comment
 ###############################################################################
 #   Checks which ConfigStore you have, some are Local and some are Roaming    #
-# sharedconfig: (vdf) The vdf dict to check                                   #
-# return: (str) The ConfigStore key to use for the vdf                        #
-###############################################################################
-def get_steam_id():
-    config_path = os.path.expandvars("$XDG_CONFIG_HOME")
-    if not os.path.exists(config_path):
-        config_path = os.path.expandvars("$HOME/.config")
-
-    config_path = os.path.join(config_path, "ProtonDB-Tags")
-    if not os.path.isdir(config_path):
-        os.makedirs(config_path)
-    
-    # Finally add our file to the end of the path.
-    config_path = os.path.join(config_path, "config.json")
-    config = {}
-
-    if os.path.exists(config_path):
-        with open(config_path) as config_file:
-            config = json.load(config_file)
-        if "steam_id" in config:
-            return config["steam_id"]
-    else:
-        print("Existing config not found.")
-        print("Config will be created here: {}".format(config_path))
-
-    print("Please go here to find your steamID64: https://steamid.io")
-
-    steam_id = input("steamID64: ")
-
-    #TODO: validate the steamID64 is valid
-
-    config["steam_id"] = steam_id
-
-    with open(config_path, 'w') as config_file:
-            json.dump(config, config_file)
-    
-    return steam_id
-
-# TODO Fix this comment
-###############################################################################
-#   Checks which ConfigStore you have, some are Local and some are Roaming    #
-# sharedconfig: (vdf) The vdf dict to check                                   #
-# return: (str) The ConfigStore key to use for the vdf                        #
-###############################################################################
-def get_steam_api_key():
-    config_path = os.path.expandvars("$XDG_CONFIG_HOME")
-    if not os.path.exists(config_path):
-        config_path = os.path.expandvars("$HOME/.config")
-
-    config_path = os.path.join(config_path, "ProtonDB-Tags")
-    if not os.path.isdir(config_path):
-        os.makedirs(config_path)
-    
-    # Finally add our file to the end of the path.
-    config_path = os.path.join(config_path, "config.json")
-    config = {}
-
-    if os.path.exists(config_path):
-        with open(config_path) as config_file:
-            config = json.load(config_file)
-        if "steam_api_key" in config:
-            return config["steam_api_key"]
-    else:
-        print("Existing config not found.")
-        print("Config will be created here: {}".format(config_path))
-
-    print("Due to recent changes in Steam, it has become more difficult to get an accurate list the games in your library.")
-    print("In order to work around this, we can use the Steam API to get this information directly.")
-    print("Please go here to generate an API key: https://steamcommunity.com/dev/apikey")
-    print("\nThis API key will be saved in the config for ProtonDB-Tags on your PC.")
-
-    api_key = input("Api key: ")
-
-    #TODO: validate the API key works
-
-    config["steam_api_key"] = api_key
-
-    with open(config_path, 'w') as config_file:
-            json.dump(config, config_file)
-    
-    return api_key
-    
-
-# TODO Fix this comment
-###############################################################################
-#   Checks which ConfigStore you have, some are Local and some are Roaming    #
-# sharedconfig: (vdf) The vdf dict to check                                   #
-# return: (str) The ConfigStore key to use for the vdf                        #
+# sharedconfig: (dict) The vdf dict to check                                  #
+# fetch_games: (bool) Should games be checked from Steam API?                 #
+# return: (dict) The apps list to run the checks on                           #
 ###############################################################################
 def get_apps_list(sharedconfig, fetch_games):
     configstore_keys = ["UserLocalConfigStore", "UserRoamingConfigStore"]
@@ -204,12 +85,12 @@ def get_apps_list(sharedconfig, fetch_games):
             apps = key
 
     if (fetch_games):
-        api_key = get_steam_api_key()
-        steam_id = get_steam_id()
+        config_manager = ConfigManager()
+        api_key = config_manager.GetSteamApiKey()
+        steam_id = config_manager.GetSteamId()
 
         apps_list = {}
 
-        # TODO: finish this
         get_owned_games_result = requests.get("https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key={}&steamid={}&include_played_free_games=true&format=json".format(api_key, steam_id))
         if get_owned_games_result.status_code != 200:
             raise SteamApiError()
@@ -234,12 +115,21 @@ def get_apps_list(sharedconfig, fetch_games):
 # return: (str) The rating returned from ProtonDB                             #
 ###############################################################################
 def get_protondb_rating(app_id):
+    cache_manager = CacheManager()
+    (found_in_cache, value) = cache_manager.GetFromProtonDBCache(app_id)
+    if found_in_cache:
+        return value
+
     protondb_api_result = requests.get("https://www.protondb.com/api/v1/reports/summaries/{}.json".format(app_id))
     if protondb_api_result.status_code != 200:
         raise ProtonDBError()
     protondb_api_json = protondb_api_result.json()
+    
     # use trendingTier as this reflects a more up-to-date rating rather than an all-time rating
-    return protondb_api_json["trendingTier"]
+    protondb_ranking = protondb_api_json["trendingTier"]
+    cache_manager.AddToProtonDBCache(app_id, protondb_ranking)
+
+    return protondb_ranking
 
 
 ###############################################################################

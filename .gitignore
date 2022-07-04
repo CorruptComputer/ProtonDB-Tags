@@ -1,1 +1,6 @@
+# Files may be stored in repo dir when testing, go ahead and ignore them.
 steamNativeCache.json
+protonDBCache.json
+config.json
+
+**/__pycache__/*
