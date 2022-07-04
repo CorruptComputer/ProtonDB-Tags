@@ -13,7 +13,7 @@ class CacheManager:
             new_cache_path = os.path.join(cache_path, "ProtonDB-Tags")
             os.rename(old_cache_path, new_cache_path)
             if len(os.listdir(os.path.join(cache_path, ".cache"))) == 0:
-                print("Old cache path '{}' is now empty, removing it...".format(os.path.join(cache_path, ".cache/ProtonDB-Tags")))
+                print(f"Old cache path '{os.path.join(cache_path, '.cache/ProtonDB-Tags')}' is now empty, removing it...")
                 os.rmdir(os.path.join(cache_path, ".cache"))
 
     def _getCachePath(self):
@@ -26,7 +26,7 @@ class CacheManager:
         cache_path = os.path.join(cache_path, "ProtonDB-Tags")
         if not os.path.isdir(cache_path):
             os.makedirs(cache_path)
-    
+
         return cache_path
 
     def _getValueFromCache(self, cache_file, app_id):
@@ -35,8 +35,8 @@ class CacheManager:
         value = False
 
         if os.path.exists(cache_path):
-            with open(cache_path) as cache_file:
-                cache = json.load(cache_file)
+            with open(cache_path, encoding="utf-8") as cache_json:
+                cache = json.load(cache_json)
 
                 if app_id in cache and "time_to_check" in cache[app_id] and "value" in cache[app_id]:
                     if cache[app_id]["time_to_check"] > int( time.time() ):
@@ -48,29 +48,29 @@ class CacheManager:
     def _addValueToCache(self, cache_file, app_id, value):
         cache_path = os.path.join(self._getCachePath(), cache_file)
         cache = {}
-        
+
         if os.path.exists(cache_path):
-            with open(cache_path) as cache_file:
-                cache = json.load(cache_file)
+            with open(cache_path, encoding="utf-8") as cache_json:
+                cache = json.load(cache_json)
         else:
             print("Steam native cache not found.")
-            print("Cache will be created here: {}".format(cache_path))
+            print(f"Cache will be created here: {cache_path}")
 
         cache[app_id] = {}                                  # 604800 = seconds in 7 days 86400 = seconds in 1 day
         cache[app_id]["time_to_check"] = int( time.time() ) + 604800 + random.randint(86400, 604800)
         cache[app_id]["value"] = value
 
-        with open(cache_path, 'w') as cache_file:
-            json.dump(cache, cache_file)
-    
+        with open(cache_path, mode='w', encoding="utf-8") as cache_json:
+            json.dump(cache, cache_json)
+
     def GetFromSteamNativeCache(self, app_id):
         return self._getValueFromCache("steamNativeCache.json", app_id)
-    
+
     def AddToSteamNativeCache(self, app_id, value):
         self._addValueToCache("steamNativeCache.json", app_id, value)
 
     def GetFromProtonDBCache(self, app_id):
         return self._getValueFromCache("protonDBCache.json", app_id)
-    
+
     def AddToProtonDBCache(self, app_id, value):
         self._addValueToCache("protonDBCache.json", app_id, value)
