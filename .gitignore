@@ -4,3 +4,4 @@ protonDBCache.json
 config.json
 
 **/__pycache__/*
+.vscode/
