@@ -58,30 +58,55 @@ def is_native(app_id):
 # return: (dict) The apps list to run the checks on                           #
 ###############################################################################
 def get_apps_list(sharedconfig, fetch_games):
+    configstore = "Not found"
     configstore_keys = ["UserLocalConfigStore", "UserRoamingConfigStore"]
     for key in configstore_keys:
         if key in sharedconfig:
             configstore = key
 
+    if configstore == "Not found":
+        configstore = "UserRoamingConfigStore"
+        sharedconfig[configstore] = {}
+
+    software = "Not found"
     software_keys = ["software", "Software"]
     for key in software_keys:
         if key in sharedconfig[configstore]:
             software = key
 
+    if software == "Not found":
+        software = "Software"
+        sharedconfig[configstore][software] = {}
+
+    valve = "Not found"
     valve_keys = ["valve", "Valve"]
     for key in valve_keys:
         if key in sharedconfig[configstore][software]:
             valve = key
 
+    if valve == "Not found":
+        valve = "Valve"
+        sharedconfig[configstore][software][valve] = {}
+
+    steam = "Not found"
     steam_keys = ["steam", "Steam"]
     for key in steam_keys:
         if key in sharedconfig[configstore][software][valve]:
             steam = key
 
+    if steam == "Not found":
+        steam = "Steam"
+        sharedconfig[configstore][software][valve][steam] = {}
+
+    apps = "Not found"
     apps_keys = ["apps", "Apps"]
     for key in apps_keys:
         if key in sharedconfig[configstore][software][valve][steam]:
             apps = key
+
+    if apps == "Not found":
+        apps = "Apps"
+        sharedconfig[configstore][software][valve][steam][apps] = {}
 
     apps_list = sharedconfig[configstore][software][valve][steam][apps]
 
@@ -90,7 +115,7 @@ def get_apps_list(sharedconfig, fetch_games):
         api_key = config_manager.get_steam_api_key()
         steam_id = config_manager.get_steam_id()
 
-        get_owned_games_result = requests.get(f"https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key={api_key}&steamid={steam_id}&include_played_free_games=true&format=json")
+        get_owned_games_result = requests.get(f"https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key={api_key}&steamid={steam_id}&include_played_free_games=true&skip_unvetted_apps=false&format=json")
         if get_owned_games_result.status_code != 200:
             raise SteamApiError()
 
