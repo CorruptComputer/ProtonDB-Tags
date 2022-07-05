@@ -14,9 +14,6 @@ from Utils.ConfigManager import ConfigManager
 class ProtonDBError(Exception):
     pass
 
-class SteamApiError(Exception):
-    pass
-
 
 ###############################################################################
 #    Checks if the game has Native Linux support from the Steam Store API     #
@@ -117,7 +114,8 @@ def get_apps_list(sharedconfig, fetch_games):
 
         get_owned_games_result = requests.get(f"https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key={api_key}&steamid={steam_id}&include_played_free_games=true&skip_unvetted_apps=false&include_free_sub=true&format=json")
         if get_owned_games_result.status_code != 200:
-            raise SteamApiError()
+            print("There was a problem retreiving your games list fromt the Steam API, please check the Steam API key and Steam ID you provided.")
+            return apps_list
 
         owned_games_json = get_owned_games_result.json()["response"]
         new_games = 0
@@ -129,7 +127,7 @@ def get_apps_list(sharedconfig, fetch_games):
                 apps_list[str(game["appid"])]["tags"]["0"] = "ProtonDB Ranking: 6 Unrated"
                 new_games += 1
 
-        print(f"Found {new_games} games from the Steam API.")
+        print(f"Found {new_games} new games from the Steam API.")
 
     return apps_list
 
