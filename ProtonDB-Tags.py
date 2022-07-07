@@ -14,13 +14,15 @@ class ProtonDBError(Exception):
     '''If ProtonDB returns an error or rate limits us, we will throw this exception.'''
 
 
-def is_native(app_id: str) -> bool:
+def is_native(app_id: str, skip_cache: bool) -> bool:
     '''Checks if the game has Native Linux support from the Steam Store API.'''
 
     cache_manager = CacheManager()
-    (found_in_cache, value) = cache_manager.get_from_steam_native_cache(app_id)
-    if found_in_cache:
-        return value
+
+    if not skip_cache:
+        (found_in_cache, value) = cache_manager.get_from_steam_native_cache(app_id)
+        if found_in_cache:
+            return value
 
     # Thanks to u/FurbyOnSteroid for finding this!
     # https://www.reddit.com/r/linux_gaming/comments/bxqsvs/protondb_to_steam_library_tool/eqal68r/
@@ -137,13 +139,14 @@ def get_apps_list(sharedconfig: dict, fetch_games: bool) -> dict:
     return apps_list
 
 
-def get_protondb_rating(app_id: str) -> str:
+def get_protondb_rating(app_id: str, skip_cache: bool) -> str:
     '''Gets the rating for the game from ProtonDB's API.'''
 
     cache_manager = CacheManager()
-    (found_in_cache, value) = cache_manager.get_from_protondb_cache(app_id)
-    if found_in_cache:
-        return value
+    if not skip_cache:
+        (found_in_cache, value) = cache_manager.get_from_protondb_cache(app_id)
+        if found_in_cache:
+            return value
 
     # For example, Warframe: https://www.protondb.com/api/v1/reports/summaries/230410.json
     api_url = f"https://www.protondb.com/api/v1/reports/summaries/{app_id}.json"
@@ -218,12 +221,12 @@ def main(args) -> None:
 
         protondb_rating = ""
         # If the app is native, no need to check ProtonDB
-        if args.check_native and is_native(app_id):
+        if args.check_native and is_native(app_id, args.skip_cache):
             protondb_rating = "native"
         else:
             # Get the ProtonDB rating for the app, if ProtonDB 404's it means no rating is available
             try:
-                protondb_rating = get_protondb_rating(app_id)
+                protondb_rating = get_protondb_rating(app_id, args.skip_cache)
             except ProtonDBError:
                 continue
 
@@ -312,6 +315,14 @@ if __name__ == "__main__":
         action = "store_true",
         default = False,
         help = "Clear your current config, useful if the values in there need to be refreshed."
+    )
+
+    PARSER.add_argument(
+        "--skip-cache",
+        dest = "skip_cache",
+        action = "store_true",
+        default = False,
+        help = "Skip reading your current cache, values retreived will still be added to the cache."
     )
 
     PARSER.add_argument(
