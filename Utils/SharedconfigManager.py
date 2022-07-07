@@ -68,7 +68,7 @@ class SharedconfigManager:
         return os.path.join(base_path, possible_ids[int(user)], "7/remote/sharedconfig.vdf")
 
 
-    def get_sharedconfig(self, sharedconfig_path: str | None) -> tuple[str, str]:
+    def get_sharedconfig(self, sharedconfig_path: str) -> tuple: # [str, str]
         '''Finds and retreives the contents of the sharedconfig file.\n
            Optionally a path can be given to use instead of searching for it.'''
 

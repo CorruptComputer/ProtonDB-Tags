@@ -43,7 +43,7 @@ class CacheManager:
         return cache_path
 
 
-    def _get_value_from_cache(self, cache_file: str, app_id: str) -> tuple[bool, any]:
+    def _get_value_from_cache(self, cache_file: str, app_id: str) -> tuple: # [bool, any]
         '''private: Gets a value from the cache.\n
            If the cached value has expired returns as if it did not exist.'''
 
@@ -87,7 +87,7 @@ class CacheManager:
             json.dump(cache, cache_json)
 
 
-    def get_from_steam_native_cache(self, app_id: str) -> tuple[bool, bool]:
+    def get_from_steam_native_cache(self, app_id: str) -> tuple: # [bool, bool]
         '''Gets a value from the cache.\n
            If the cached value has expired returns as if it did not exist.'''
 
@@ -101,7 +101,7 @@ class CacheManager:
         self._add_value_to_cache("steamNativeCache.json", app_id, value)
 
 
-    def get_from_protondb_cache(self, app_id: str) -> tuple[bool, str]:
+    def get_from_protondb_cache(self, app_id: str) -> tuple: # [bool, str]
         '''Gets a value from the cache.\n
            If the cached value has expired returns as if it did not exist.'''
 
