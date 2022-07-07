@@ -1,26 +1,22 @@
 #!/usr/bin/env python3
+'''ProtonDB Tags'''
 
 import argparse
-import os
-import sys
 import time
-import vdf
 import requests
 
 from Utils.CacheManager import CacheManager
 from Utils.ConfigManager import ConfigManager
+from Utils.SharedconfigManager import SharedconfigManager
 
 
 class ProtonDBError(Exception):
-    pass
+    '''If ProtonDB returns an error or rate limits us, we will throw this exception.'''
 
 
-###############################################################################
-#    Checks if the game has Native Linux support from the Steam Store API     #
-# app_id: (str) The steam application id to check                             #
-# return: (boolean) If the game is native                                     #
-###############################################################################
-def is_native(app_id):
+def is_native(app_id: str) -> bool:
+    '''Checks if the game has Native Linux support from the Steam Store API.'''
+
     cache_manager = CacheManager()
     (found_in_cache, value) = cache_manager.get_from_steam_native_cache(app_id)
     if found_in_cache:
@@ -30,80 +26,58 @@ def is_native(app_id):
     # https://www.reddit.com/r/linux_gaming/comments/bxqsvs/protondb_to_steam_library_tool/eqal68r/
     api_url = f"https://store.steampowered.com/api/appdetails?appids={app_id}&filters=platforms"
     steam_api_result = requests.get(api_url)
-    # Wait 1.3 seconds before continuing, as Steam only allows 10 requests per 10 seconds, otherwise you get rate limited for a few minutes.
+
+    # Wait 1.3 seconds before continuing, as Steam only allows 10 requests per 10 seconds,
+    # otherwise you get rate limited for a few minutes.
     time.sleep(1.3)
 
     if steam_api_result.status_code != 200:
-        print(f"Error pulling info from Steam API for {app_id}. You're probably being rate-limited or the store page no longer exists.")
+        print(f"Error pulling info from Steam API for {app_id}." +
+            "You're probably being rate-limited or the store page no longer exists.")
         return False
 
     steam_api_json = steam_api_result.json()
 
     # If steam can't find the game it will be False
-    if steam_api_json[app_id]["success"] in ["True", "true", True]:
-        is_native_game = steam_api_json[app_id]["data"]["platforms"]["linux"] in ["True", "true", True]
+    is_success = steam_api_json[app_id]["success"]
+    if is_success in ["True", "true", True]:
+        linux_support = steam_api_json[app_id]["data"]["platforms"]["linux"]
+        is_native_game = linux_support in ["True", "true", True]
+
         cache_manager.add_to_steam_native_cache(app_id, is_native_game)
 
         return is_native_game
 
     return False
 
-###############################################################################
-#   Checks which ConfigStore you have, some are Local and some are Roaming    #
-# sharedconfig: (dict) The vdf dict to check                                  #
-# fetch_games: (bool) Should games be checked from Steam API?                 #
-# return: (dict) The apps list to run the checks on                           #
-###############################################################################
-def get_apps_list(sharedconfig, fetch_games):
-    configstore = "Not found"
-    configstore_keys = ["UserLocalConfigStore", "UserRoamingConfigStore"]
-    for key in configstore_keys:
-        if key in sharedconfig:
-            configstore = key
 
-    if configstore == "Not found":
-        configstore = "UserRoamingConfigStore"
-        sharedconfig[configstore] = {}
+def get_key_value(possible_keys, dict_to_check: dict) -> str:
+    '''Finds which key exists in the dict.\n
+       If none of the values are found the first will be taken as a default.\n
+       possible_keys should be of type str[]'''
 
-    software = "Not found"
-    software_keys = ["software", "Software"]
-    for key in software_keys:
-        if key in sharedconfig[configstore]:
-            software = key
+    found_key = "Not found"
+    for key in possible_keys:
+        if key in dict_to_check:
+            found_key = key
 
-    if software == "Not found":
-        software = "Software"
-        sharedconfig[configstore][software] = {}
+    if found_key == "Not found":
+        found_key = possible_keys[0]
+        dict_to_check[found_key] = {}
 
-    valve = "Not found"
-    valve_keys = ["valve", "Valve"]
-    for key in valve_keys:
-        if key in sharedconfig[configstore][software]:
-            valve = key
+    return found_key
 
-    if valve == "Not found":
-        valve = "Valve"
-        sharedconfig[configstore][software][valve] = {}
 
-    steam = "Not found"
-    steam_keys = ["steam", "Steam"]
-    for key in steam_keys:
-        if key in sharedconfig[configstore][software][valve]:
-            steam = key
+def get_apps_list(sharedconfig: dict, fetch_games: bool) -> dict:
+    '''Searches the sharedconfig to get a list of Steam app IDs.\n
+       Optionally can query the Steam API to check for games as well.'''
 
-    if steam == "Not found":
-        steam = "Steam"
-        sharedconfig[configstore][software][valve][steam] = {}
-
-    apps = "Not found"
-    apps_keys = ["apps", "Apps"]
-    for key in apps_keys:
-        if key in sharedconfig[configstore][software][valve][steam]:
-            apps = key
-
-    if apps == "Not found":
-        apps = "Apps"
-        sharedconfig[configstore][software][valve][steam][apps] = {}
+    # If neither value is found, the first will be taken as a default and initialized to {}
+    configstore = get_key_value(["UserRoamingConfigStore", "UserLocalConfigStore"], sharedconfig)
+    software = get_key_value(["Software", "software"], sharedconfig[configstore])
+    valve = get_key_value(["Valve", "valve"], sharedconfig[configstore][software])
+    steam = get_key_value(["Steam", "steam"], sharedconfig[configstore][software][valve])
+    apps = get_key_value(["Apps", "apps"], sharedconfig[configstore][software][valve][steam])
 
     apps_list = sharedconfig[configstore][software][valve][steam][apps]
 
@@ -112,13 +86,44 @@ def get_apps_list(sharedconfig, fetch_games):
         api_key = config_manager.get_steam_api_key()
         steam_id = config_manager.get_steam_id()
 
-        get_owned_games_result = requests.get(f"https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key={api_key}&steamid={steam_id}&include_played_free_games=true&skip_unvetted_apps=false&include_free_sub=true&format=json")
+        api_url = "https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/" + \
+            f"?key={api_key}" + \
+            f"&steamid={steam_id}" + \
+            "&include_played_free_games=true" + \
+            "&skip_unvetted_apps=false" + \
+            "&include_free_sub=true" + \
+            "&format=json"
+
+        get_owned_games_result = requests.get(api_url)
         if get_owned_games_result.status_code != 200:
-            print("There was a problem retreiving your games list fromt the Steam API, please check the Steam API key and Steam ID you provided.")
+            print("There was a problem retreiving your games list from the Steam API, " + \
+                f"status code was: {get_owned_games_result.status_code}")
+
+            if get_owned_games_result.status_code == 401:
+                print("A 401 status code usually means authentication failure, " + \
+                    "your API key is most likely invalid.")
+            elif get_owned_games_result.status_code == 500:
+                print("A 500 status code usually means server error, " + \
+                    "your steamID64 may be invalid or Steam is currently down.")
+
+            config_manager.clear_config()
             return apps_list
 
         owned_games_json = get_owned_games_result.json()["response"]
         new_games = 0
+
+        if "games" not in owned_games_json:
+            print("\nNo games returned by the Steam API for your account. " + \
+                "This usually means that your profile and games list are set to private.")
+
+            print("If you are uncomfortable having a public profile, don't worry. " + \
+                "This only needs to be public for long enough to run the script.")
+
+            print("\nThese settings can be changed here: " + \
+                "https://steamcommunity.com/my/edit/settings")
+
+            return apps_list
+
 
         for game in owned_games_json["games"]:
             if str(game["appid"]) not in apps_list:
@@ -131,20 +136,22 @@ def get_apps_list(sharedconfig, fetch_games):
 
     return apps_list
 
-###############################################################################
-#             Gets the rating for the game from ProtonDB's API                #
-# app_id: (str) The Steam application ID to check ProtonDB for                #
-# return: (str) The rating returned from ProtonDB                             #
-###############################################################################
-def get_protondb_rating(app_id):
+
+def get_protondb_rating(app_id: str) -> str:
+    '''Gets the rating for the game from ProtonDB's API.'''
+
     cache_manager = CacheManager()
     (found_in_cache, value) = cache_manager.get_from_protondb_cache(app_id)
     if found_in_cache:
         return value
 
-    protondb_api_result = requests.get(f"https://www.protondb.com/api/v1/reports/summaries/{app_id}.json")
+    # For example, Warframe: https://www.protondb.com/api/v1/reports/summaries/230410.json
+    api_url = f"https://www.protondb.com/api/v1/reports/summaries/{app_id}.json"
+    protondb_api_result = requests.get(api_url)
+
     if protondb_api_result.status_code != 200:
         raise ProtonDBError()
+
     protondb_api_json = protondb_api_result.json()
 
     # use trendingTier as this reflects a more up-to-date rating rather than an all-time rating
@@ -154,63 +161,11 @@ def get_protondb_rating(app_id):
     return protondb_ranking
 
 
-###############################################################################
-#       Tries to find where Steam is installed to on the local machine        #
-# return: (str) The path to the Steam install location                        #
-###############################################################################
-def find_sharedconfig():
-    possible_paths = ["~/.local/share/Steam/userdata",
-                      "~/.steam/steam/userdata",
-                      "~/.steam/root/userdata",
-                      "~/.var/app/com.valvesoftware.Steam/.local/share/Steam/userdata",
-                      "C:\\Program Files (x86)\\Steam\\userdata"]
+def get_tag_number(app: dict) -> str:
+    '''Checks for an existing ProtonDB Rating tag,
+       if it doesn't have one it finds the next available tag number to add for the game.'''
 
-    base_path = ""
-
-    for path in possible_paths:
-        try:
-            expanded_path = os.path.expanduser(path)
-            if os.path.exists(expanded_path):
-                base_path = expanded_path
-                print(f"Steam found at: {expanded_path}")
-                break
-        except FileNotFoundError:
-            continue
-
-    else:
-        print("Could not find Steam! Please pass the path to sharedconfig.vdf with the --sharedconfig parameter.")
-        sys.exit()
-
-    # Some people may have more than one Steam user on their PC, this checks for that and asks which you would like to use if multiple are found
-    possible_ids = []
-    for user_id in os.listdir(base_path):
-        if os.path.isdir(os.path.join(base_path, user_id)):
-            username = ""
-            try:
-                with open(os.path.join(base_path, user_id, "config/localconfig.vdf"), encoding="utf-8") as localconfig_vdf:
-                    username = vdf.load(localconfig_vdf)["UserLocalConfigStore"]["friends"]["PersonaName"]
-            except:
-                username = "(Could not load username from Steam)"
-            print(f"Found user {len(possible_ids)}: {user_id}   {username}")
-            possible_ids.append(user_id)
-
-    user = 0
-    if len(possible_ids) == 1:
-        print("Only one user found.")
-    else:
-        user = input("Which user number would you like to open? ")
-
-    return os.path.join(base_path, possible_ids[int(user)], "7/remote/sharedconfig.vdf")
-
-
-###############################################################################
-#      Checks for an existing ProtonDB Rating tag, if it doesn't have one     #
-#      it finds the next available tag number to add for the game             #
-# app: (vdf) The vdf dict for the current app                                 #
-# return: (str) The number (key) to use for the Steam tag                     #
-###############################################################################
-def get_tag_number(app):
-    tag_num = ""
+    tag_num = None
 
     if "tags" in app and isinstance(app["tags"], dict):
         # Have to create a copy to avoid: "RuntimeError: dictionary changed size during iteration"
@@ -221,11 +176,13 @@ def get_tag_number(app):
                 if not tag_num:
                     tag_num = tag
                 else:
-                    # Delete dupe tags caused by error of previous versions, may remove this check in the future once its no longer an issue
+                    # Delete dupe tags caused by error of previous versions,
+                    # may remove this check in the future once its no longer an issue
                     del app["tags"][tag]
         if not tag_num:
             # If no ProtonDB tags were found, use the next available number
             tag_num = str(len(app["tags"]))
+
     # If the tags key wasn't found, that means there are no tags for the game
     else:
         tag_num = "0"
@@ -234,60 +191,37 @@ def get_tag_number(app):
     return tag_num
 
 
-###############################################################################
-#                      Main function, does everything                         #
-# args: Arguments passed to the script via command line                       #
-###############################################################################
-def main(args):
-    sharedconfig_path = ""
-    no_save = args.no_save
-    check_native = args.check_native
-    fetch_games = args.fetch_games
+def main(args) -> None:
+    '''Main entry point into the script.'''
 
-    if args.sharedconfig_path:
-        # With ~ for user home
-        if os.path.exists(os.path.expanduser(args.sharedconfig_path)):
-            try:
-                with open(args.sharedconfig_path, encoding="utf-8") as sharedconfig_vdf:
-                    vdf.load(sharedconfig_vdf)
-                sharedconfig_path = os.path.expanduser(args.sharedconfig_path)
+    if args.clear_config:
+        config_manager = ConfigManager()
+        config_manager.clear_config()
 
-            except:
-                print(f"Invalid sharedconfig path: '{args.sharedconfig_path}'")
-                sys.exit()
-        else:
-            print(f"Shared config path '{args.sharedconfig_path}' does not exist. Using default path.")
-
-    # If sharedconfig_path was not set with a command line argument, have get_sharedconfig_path() find it
-    if not sharedconfig_path:
-        sharedconfig_path = find_sharedconfig()
-
-    print(f"Selected: {sharedconfig_path}")
-    with open(sharedconfig_path, encoding="utf-8") as sharedconfig_vdf:
-        sharedconfig = vdf.load(sharedconfig_vdf)
+    sharedconfig_manager = SharedconfigManager()
+    (sharedconfig_path, sharedconfig) = \
+        sharedconfig_manager.get_sharedconfig(args.sharedconfig_path)
 
     # This makes the code slightly cleaner
-    apps = get_apps_list(sharedconfig, fetch_games)
+    apps = get_apps_list(sharedconfig, args.fetch_games)
 
     app_count = len(apps)
-    print(f"Found {app_count} Steam games")
+    print(f"Found a total of {app_count} Steam games")
 
     for count, app_id in enumerate(apps, 1):
-        # This has to be here because some Steam AppID's are strings of text, which ProtonDB does not support. Check test01.vdf line 278 for an example.
+        # This has to be here because some Steam AppID's are strings of text,
+        # which ProtonDB does not support. Check test01.vdf line 278 for an example.
         try:
             int(app_id)
         except ValueError:
             continue
 
-        if count > 0 and count % 10 == 0:
-            print(f"Processed ({count} of {app_count}) games...")
-
         protondb_rating = ""
         # If the app is native, no need to check ProtonDB
-        if check_native and is_native(app_id):
+        if args.check_native and is_native(app_id):
             protondb_rating = "native"
         else:
-            # Get the ProtonDB rating for the app, if ProtonDB 404's it means no rating is available for the game and likely native
+            # Get the ProtonDB rating for the app, if ProtonDB 404's it means no rating is available
             try:
                 protondb_rating = get_protondb_rating(app_id)
             except ProtonDBError:
@@ -295,7 +229,7 @@ def main(args):
 
         tag_num = get_tag_number(apps[app_id])
 
-        # The 1,2,etc. force the better ranks to be at the top, as Steam sorts these alphanumerically
+        # The numbers force the better ranks to be at the top, as Steam sorts these alphanumerically
         possible_ranks = {
             "native":   "ProtonDB Ranking: 0 Native",
             "platinum": "ProtonDB Ranking: 1 Platinum",
@@ -306,7 +240,6 @@ def main(args):
             "unrated":  "ProtonDB Ranking: 6 Unrated",
             "borked":   "ProtonDB Ranking: 7 Borked",
         }
-
 
         new_rank = True
         try:
@@ -329,38 +262,65 @@ def main(args):
             print(f"{app_id} {protondb_rating}")
 
         if new_rank:
-            # Try to inject the tag into the vdfDict, if the returned rating from ProtonDB isn't a key above it will error out
+            # Try to inject the tag into the vdfDict, if the returned rating from ProtonDB isn't a
+            # key in possible_ranks it will error out
             if protondb_rating in possible_ranks:
                 apps[app_id]["tags"][tag_num] = possible_ranks[protondb_rating]
             else:
                 print(f"Unknown ProtonDB rating: {protondb_rating}\n Please report this on GitHub!")
 
+        if count > 0 and count % 10 == 0:
+            print(f"Processed ({count} of {app_count}) games...")
 
-    # no_save will be True if -n is passed
-    if not no_save:
-        print("WARNING: This may clear your current tags on Steam!")
-        check = input("Would you like to save sharedconfig.vdf? (y/N)")
-        if check.lower() in ("yes", "y"):
-            # Output the edited vdfDict back to the original location
-            with open(sharedconfig_path, mode='w', encoding="utf-8") as sharedconfig_vdf:
-                vdf.dump(sharedconfig, sharedconfig_vdf, pretty=True)
-
-            # Workaround provided by Valve for the new library
-            url = "steam://resetcollections"
-            if sys.platform == "win32":
-                command = "start "
-            else:
-                command = "steam "
-            input("Please launch Steam, then press Enter to continue...")
-            os.system(command + url) #Reset Collections
+    # True if -n or --no-save is passed
+    if not args.no_save:
+        sharedconfig_manager.save_sharedconfig(sharedconfig_path, sharedconfig)
 
 # Run it
 if __name__ == "__main__":
-    PARSER = argparse.ArgumentParser(description="Add Steam games to categories based on ProtonDB rankings")
-    PARSER.add_argument("-c", "--check-native", dest="check_native", action="store_true", default=False, help="Check for native Linux support (WILL add 1+ second per game to lookup if not cached)")
-    PARSER.add_argument("-n", "--no-save", dest="no_save", action="store_true", default=False, help="Disable the save option at the end to allow for unattended testing")
-    PARSER.add_argument("-f", "--fetch-games", dest="fetch_games", action="store_true", default=False, help="Fetch your games list from your Steam account")
-    PARSER.add_argument("-s", "--sharedconfig", dest="sharedconfig_path", help="Specify a custom location for sharedconfig.vdf")
+    PARSER = argparse.ArgumentParser(
+        description = "Add Steam games to categories based on ProtonDB rankings"
+    )
+
+    PARSER.add_argument(
+        "-c", "--check-native",
+        dest = "check_native",
+        action = "store_true",
+        default = False,
+        help = "Check for native Linux support (will add 1.3 seconds per non-cached game)"
+    )
+
+    PARSER.add_argument(
+        "-n", "--no-save",
+        dest = "no_save",
+        action = "store_true",
+        default = False,
+        help = "Disable the save option at the end to allow for unattended testing"
+    )
+
+    PARSER.add_argument(
+        "-f", "--fetch-games",
+        dest = "fetch_games",
+        action = "store_true",
+        default = False,
+        help = "Fetch your games list from the Steam API"
+    )
+
+    PARSER.add_argument(
+        "--clear-config",
+        dest = "clear_config",
+        action = "store_true",
+        default = False,
+        help = "Clear your current config, useful if the values in there need to be refreshed."
+    )
+
+    PARSER.add_argument(
+        "-s", "--sharedconfig",
+        dest = "sharedconfig_path",
+        default = None,
+        help = "Specify a custom location for sharedconfig.vdf"
+    )
+
     ARGUMENTS = PARSER.parse_args()
 
     main(ARGUMENTS)
