@@ -34,7 +34,7 @@ It will also ask before saving the file, so if you want to just test it out ther
 
 By default this will not check the Steam API for native titles. This can be enabled with the `--check-native` flag. This will add a 1 second wait to each Steam API call, as without this you will get rate-limited. The script will build a cache of these as it runs, so after the first run it will go faster.
 
-You can also specify a custom path to your sharedconfig.vdf with: 
+You can also specify a custom path to your `sharedconfig.vdf` with: 
 ```bash
 python ProtonDB-Tags.py --sharedconfig /path/to/sharedconfig.vdf
 ```
@@ -46,21 +46,20 @@ python ProtonDB-Tags.py --help
 
 ### Contributing
 
-If you run into any issues please attach the output from the script to your issue, along with the sharedconfig.vdf file which was selected.
-
 All feedback is welcome and appreciated! Please make an issue if you have any ideas or feedback, I would love to hear them!
 
-If you would like to make a PR all I ask is that you are also open to feedback on your written code.
+If you would like to make a PR all I ask is that you are also open to feedback on your written code. 
 
 ### Troubleshooting
 
-If you are finding that only some of your Proton compatible games are being categorized try this:
-1. Select all of the uncategorized games in your library
-2. Right click -> Add to -> ProtonDB Ranking: 7 Borked
-3. File -> Exit Steam to force it to write all of your games to the sharedconfig.vdf file
-4. Try running the script again
+If you are finding that not all of your games are being categorized try adding the `--fetch-games` flag to the script.
+This will require you to provide a Steam API Key, and the script will walk you through getting it setup.
+With this the script will be able to read the Steam API directly to pull a list of the games on your account.
+Any games that are found to be missing from the local `sharedconfig.vdf` will be added there and should be categories as expected.
 
 Please keep in mind that most Linux Native games will not be categorized without the `--check-native` flag, as ProtonDB doesn't return anything for them.
+
+---
 
 If you get an error which looks like this:
 ```
@@ -76,4 +75,4 @@ Traceback (most recent call last):
 ```
 It means you ran the script with python2, please run it with python3. More info about why this error happens can be found [here](https://stackoverflow.com/a/21122817).
 
-If anything is still not working you can open an issue here, or join my Discord server (link is at the top of this README). Please respect the rules of the server if you join!
+If anything else is not working you please feel free to open an issue here.
