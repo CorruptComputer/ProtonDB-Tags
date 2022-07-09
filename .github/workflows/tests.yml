@@ -1,0 +1,42 @@
+name: Tests
+
+on: [ push, pull_request ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [ '3.7', '3.8', '3.9', '3.10' ]
+    name: Python ${{ matrix.python-version }}
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Run pylint
+      run: |
+        pylint *.py **/*.py --disable=invalid-name,bare-except,too-many-branches,too-many-locals
+    
+    - name: Run test cases
+      run: |
+        python ProtonDB-Tags.py --sharedconfig ./test-sharedconfigs/test01.vdf --check-native --no-save
+        python ProtonDB-Tags.py --sharedconfig ./test-sharedconfigs/test02.vdf --no-save
+        python ProtonDB-Tags.py --sharedconfig ./test-sharedconfigs/test03.vdf --no-save
+        python ProtonDB-Tags.py --sharedconfig ./test-sharedconfigs/test04.vdf --no-save
+        python ProtonDB-Tags.py --sharedconfig ./test-sharedconfigs/test05.vdf --no-save
+        python ProtonDB-Tags.py --sharedconfig ./test-sharedconfigs/test06.vdf --no-save
+    
