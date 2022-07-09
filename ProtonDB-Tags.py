@@ -172,7 +172,7 @@ def get_protondb_rating(app_id: str, skip_cache: bool, cache_manager: CacheManag
         if protondb_response.status_code == 200:
             protondb_data = protondb_response.json()
             protondb_ranking = protondb_data["trendingTier"]
-        
+
         cache_manager.add_to_protondb_cache(app_id, protondb_ranking)
 
     return protondb_ranking

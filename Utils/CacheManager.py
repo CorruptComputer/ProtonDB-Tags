@@ -58,7 +58,7 @@ class CacheManager:
         else:
             print("\nSteam native cache not found.")
             print(f"This will be created here: {self._steam_native_cache_path}")
-        
+
         if os.path.exists(self._protondb_cache_path):
             with open(self._protondb_cache_path, encoding="utf-8") as cache_json:
                 self._protondb_cache = json.load(cache_json)
@@ -66,7 +66,7 @@ class CacheManager:
             print("\nProtonDB cache not found.")
             print(f"This will be created here: {self._protondb_cache_path}")
 
-        
+
     def get_from_steam_native_cache(self, app_id: str) -> tuple: # [bool, bool]
         '''Gets a value from the Steam native cache.\n
            If the cached value has expired returns as if it did not exist.'''
