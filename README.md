@@ -49,6 +49,7 @@ python ProtonDB-Tags.py --help
 All feedback is welcome and appreciated! Please make an issue if you have any ideas or feedback, I would love to hear them!
 
 If you would like to make a PR all I ask is that you are also open to feedback on your written code. 
+PRs should target the `dev` branch of the repo.
 
 ### Troubleshooting
 
