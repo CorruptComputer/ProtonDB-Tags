@@ -43,73 +43,93 @@ class CacheManager:
         return cache_path
 
 
-    def _get_value_from_cache(self, cache_file: str, app_id: str) -> tuple: # [bool, any]
-        '''private: Gets a value from the cache.\n
+    def __init__(self):
+        '''Init'''
+
+        self._base_cache_path = self._get_cache_path()
+        self._steam_native_cache_path = os.path.join(self._base_cache_path, "steamNativeCache.json")
+        self._protondb_cache_path = os.path.join(self._base_cache_path, "protonDBCache.json")
+        self._steam_native_cache = {}
+        self._protondb_cache = {}
+
+        if os.path.exists(self._steam_native_cache_path):
+            with open(self._steam_native_cache_path, encoding="utf-8") as cache_json:
+                self._steam_native_cache = json.load(cache_json)
+        else:
+            print("\nSteam native cache not found.")
+            print(f"This will be created here: {self._steam_native_cache_path}")
+        
+        if os.path.exists(self._protondb_cache_path):
+            with open(self._protondb_cache_path, encoding="utf-8") as cache_json:
+                self._protondb_cache = json.load(cache_json)
+        else:
+            print("\nProtonDB cache not found.")
+            print(f"This will be created here: {self._protondb_cache_path}")
+
+        
+    def get_from_steam_native_cache(self, app_id: str) -> tuple: # [bool, bool]
+        '''Gets a value from the Steam native cache.\n
            If the cached value has expired returns as if it did not exist.'''
 
-        cache_path = os.path.join(self._get_cache_path(), cache_file)
         found_in_cache = False
         value = False
 
-        if os.path.exists(cache_path):
-            with open(cache_path, encoding="utf-8") as cache_json:
-                cache = json.load(cache_json)
-
-                if app_id in cache \
-                and "time_to_check" in cache[app_id] \
-                and "value" in cache[app_id]:
-                    if int(cache[app_id]["time_to_check"]) > int(time.time()):
-                        value = cache[app_id]["value"]
-                        found_in_cache = True
+        if app_id in self._steam_native_cache:
+            app_cache = self._steam_native_cache[app_id]
+            if "time_to_check" in app_cache and "value" in app_cache:
+                if int(app_cache["time_to_check"]) > int(time.time()):
+                    value = app_cache["value"]
+                    found_in_cache = True
 
         return (found_in_cache, value)
 
 
-    def _add_value_to_cache(self, cache_file: str, app_id: str, value: any) -> None:
-        '''private: Adds the specified value to the cache,
-           sets expiration to (7 days + random value 1-7 days).'''
-
-        cache_path = os.path.join(self._get_cache_path(), cache_file)
-        cache = {}
-
-        if os.path.exists(cache_path):
-            with open(cache_path, encoding="utf-8") as cache_json:
-                cache = json.load(cache_json)
-        else:
-            print("Steam native cache not found.")
-            print(f"Cache will be created here: {cache_path}")
-
-        cache[app_id] = {}               # 604800 = seconds in 7 days     86400 = seconds in 1 day
-        cache[app_id]["time_to_check"] = int(time.time()) + 604800 + random.randint(86400, 604800)
-        cache[app_id]["value"] = value
-
-        with open(cache_path, mode='w', encoding="utf-8") as cache_json:
-            json.dump(cache, cache_json)
-
-
-    def get_from_steam_native_cache(self, app_id: str) -> tuple: # [bool, bool]
-        '''Gets a value from the cache.\n
-           If the cached value has expired returns as if it did not exist.'''
-
-        return self._get_value_from_cache("steamNativeCache.json", app_id)
-
-
     def add_to_steam_native_cache(self, app_id: str, value: bool) -> None:
-        '''Adds the specified value to the cache,
+        '''Adds the specified value to the Steam native cache,
            sets expiration to (7 days + random value 1-7 days).'''
 
-        self._add_value_to_cache("steamNativeCache.json", app_id, value)
+        self._steam_native_cache[app_id] = app_cache = {}
+
+        # 86400 = seconds in 1 day
+        # 604800 = seconds in 7 days
+        app_cache["time_to_check"] = int(time.time()) + 604800 + random.randint(86400, 604800)
+        app_cache["value"] = value
 
 
     def get_from_protondb_cache(self, app_id: str) -> tuple: # [bool, str]
-        '''Gets a value from the cache.\n
+        '''Gets a value from the ProtonDB cache.\n
            If the cached value has expired returns as if it did not exist.'''
 
-        return self._get_value_from_cache("protonDBCache.json", app_id)
+        found_in_cache = False
+        value = False
+
+        if app_id in self._protondb_cache:
+            app_cache = self._protondb_cache[app_id]
+            if "time_to_check" in app_cache and "value" in app_cache:
+                if int(app_cache["time_to_check"]) > int(time.time()):
+                    value = app_cache["value"]
+                    found_in_cache = True
+
+        return (found_in_cache, value)
 
 
     def add_to_protondb_cache(self, app_id: str, value: str) -> None:
-        '''Adds the specified value to the cache,
+        '''Adds the specified value to the ProtonDB cache,
            sets expiration to (7 days + random value 1-7 days).'''
 
-        self._add_value_to_cache("protonDBCache.json", app_id, value)
+        self._protondb_cache[app_id] = app_cache = {}
+
+        # 86400 = seconds in 1 day
+        # 604800 = seconds in 7 days
+        app_cache["time_to_check"] = int(time.time()) + 604800 + random.randint(86400, 604800)
+        app_cache["value"] = value
+
+
+    def save_caches(self):
+        '''Writes the currently cached data to the disk.'''
+
+        with open(self._steam_native_cache_path, mode='w', encoding="utf-8") as cache_file:
+            json.dump(self._steam_native_cache, cache_file)
+
+        with open(self._protondb_cache_path, mode='w', encoding="utf-8") as cache_file:
+            json.dump(self._protondb_cache, cache_file)

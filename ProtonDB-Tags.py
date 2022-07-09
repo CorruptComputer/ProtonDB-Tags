@@ -14,10 +14,8 @@ class ProtonDBError(Exception):
     '''If ProtonDB returns an error or rate limits us, we will throw this exception.'''
 
 
-def is_native(app_id: str, skip_cache: bool) -> bool:
+def is_native(app_id: str, skip_cache: bool, cache_manager: CacheManager) -> bool:
     '''Checks if the game has Native Linux support from the Steam Store API.'''
-
-    cache_manager = CacheManager()
 
     if not skip_cache:
         (found_in_cache, value) = cache_manager.get_from_steam_native_cache(app_id)
@@ -27,30 +25,39 @@ def is_native(app_id: str, skip_cache: bool) -> bool:
     # Thanks to u/FurbyOnSteroid for finding this!
     # https://www.reddit.com/r/linux_gaming/comments/bxqsvs/protondb_to_steam_library_tool/eqal68r/
     api_url = f"https://store.steampowered.com/api/appdetails?appids={app_id}&filters=platforms"
-    steam_api_result = requests.get(api_url)
+    steam_response = None
+    is_native_game = False
+
+    try:
+        steam_response = requests.get(api_url)
+    except requests.Timeout:
+        print(f"{app_id} | Timed out reading Steam store page.")
+    except requests.ConnectionError:
+        print(f"{app_id} | Could not connect to ProtonDB")
+    except requests.RequestException:
+        print(f"{app_id} | An unknown error occoured when the request to ProtonDB")
 
     # Wait 1.3 seconds before continuing, as Steam only allows 10 requests per 10 seconds,
     # otherwise you get rate limited for a few minutes.
     time.sleep(1.3)
 
-    if steam_api_result.status_code != 200:
-        print(f"Error pulling info from Steam API for {app_id}." +
-            "You're probably being rate-limited or the store page no longer exists.")
-        return False
+    if steam_response:
+        if steam_response.status_code != 200:
+            print(f"{app_id} | Error reading Steam store info for game.")
+            return False
 
-    steam_api_json = steam_api_result.json()
+        steam_api_json = steam_response.json()
 
-    # If steam can't find the game it will be False
-    is_success = steam_api_json[app_id]["success"]
-    if is_success in ["True", "true", True]:
-        linux_support = steam_api_json[app_id]["data"]["platforms"]["linux"]
-        is_native_game = linux_support in ["True", "true", True]
+        # If steam can't find the game it will be False
+        is_success = steam_api_json[app_id]["success"]
+        is_native_game = False
+
+        if is_success in ["True", "true", True]:
+            linux_support = steam_api_json[app_id]["data"]["platforms"]["linux"]
+            is_native_game = linux_support in ["True", "true", True]
 
         cache_manager.add_to_steam_native_cache(app_id, is_native_game)
-
-        return is_native_game
-
-    return False
+    return is_native_game
 
 
 def get_key_value(possible_keys, dict_to_check: dict) -> str:
@@ -131,7 +138,6 @@ def get_apps_list(sharedconfig: dict, fetch_games: bool) -> dict:
             if str(game["appid"]) not in apps_list:
                 apps_list[str(game["appid"])] = {}
                 apps_list[str(game["appid"])]["tags"] = {}
-                apps_list[str(game["appid"])]["tags"]["0"] = "ProtonDB Ranking: 6 Unrated"
                 new_games += 1
 
         print(f"Found {new_games} new games from the Steam API.")
@@ -139,10 +145,10 @@ def get_apps_list(sharedconfig: dict, fetch_games: bool) -> dict:
     return apps_list
 
 
-def get_protondb_rating(app_id: str, skip_cache: bool) -> str:
-    '''Gets the rating for the game from ProtonDB's API.'''
+def get_protondb_rating(app_id: str, skip_cache: bool, cache_manager: CacheManager) -> str:
+    '''Gets the rating for the game from ProtonDB's API.
+       Defaults to 'unrated' if there is a problem with the ProtonDB API.'''
 
-    cache_manager = CacheManager()
     if not skip_cache:
         (found_in_cache, value) = cache_manager.get_from_protondb_cache(app_id)
         if found_in_cache:
@@ -150,16 +156,24 @@ def get_protondb_rating(app_id: str, skip_cache: bool) -> str:
 
     # For example, Warframe: https://www.protondb.com/api/v1/reports/summaries/230410.json
     api_url = f"https://www.protondb.com/api/v1/reports/summaries/{app_id}.json"
-    protondb_api_result = requests.get(api_url)
+    protondb_response = None
+    protondb_ranking = "unrated"
 
-    if protondb_api_result.status_code != 200:
-        raise ProtonDBError()
+    try:
+        protondb_response = requests.get(api_url)
+    except requests.Timeout:
+        print(f"{app_id} | Timed out reading the ranking from ProtonDB")
+    except requests.ConnectionError:
+        print(f"{app_id} | Could not connect to ProtonDB")
+    except requests.RequestException:
+        print(f"{app_id} | An unknown error occoured when the request to ProtonDB")
 
-    protondb_api_json = protondb_api_result.json()
-
-    # use trendingTier as this reflects a more up-to-date rating rather than an all-time rating
-    protondb_ranking = protondb_api_json["trendingTier"]
-    cache_manager.add_to_protondb_cache(app_id, protondb_ranking)
+    if protondb_response:
+        if protondb_response.status_code == 200:
+            protondb_data = protondb_response.json()
+            protondb_ranking = protondb_data["trendingTier"]
+        
+        cache_manager.add_to_protondb_cache(app_id, protondb_ranking)
 
     return protondb_ranking
 
@@ -208,9 +222,10 @@ def main(args) -> None:
     # This makes the code slightly cleaner
     apps = get_apps_list(sharedconfig, args.fetch_games)
 
+    cache_manager = CacheManager()
     app_count = len(apps)
-    print(f"Found a total of {app_count} Steam games")
 
+    print(f"\nFound a total of {app_count} Steam games.")
     for count, app_id in enumerate(apps, 1):
         # This has to be here because some Steam AppID's are strings of text,
         # which ProtonDB does not support. Check test01.vdf line 278 for an example.
@@ -219,16 +234,13 @@ def main(args) -> None:
         except ValueError:
             continue
 
-        protondb_rating = ""
+        game_rating = ""
         # If the app is native, no need to check ProtonDB
-        if args.check_native and is_native(app_id, args.skip_cache):
-            protondb_rating = "native"
+        if args.check_native and is_native(app_id, args.skip_cache, cache_manager):
+            game_rating = "native"
         else:
-            # Get the ProtonDB rating for the app, if ProtonDB 404's it means no rating is available
-            try:
-                protondb_rating = get_protondb_rating(app_id, args.skip_cache)
-            except ProtonDBError:
-                continue
+            # Get the ProtonDB rating for the app, if nothing returned defaults to unrated
+            game_rating = get_protondb_rating(app_id, args.skip_cache, cache_manager)
 
         tag_num = get_tag_number(apps[app_id])
 
@@ -245,7 +257,11 @@ def main(args) -> None:
         }
 
         new_rank = True
-        try:
+
+        if "tags" not in apps[app_id]:
+            apps[app_id]["tags"] = {}
+
+        if tag_num in apps[app_id]["tags"]:
             old_tag = apps[app_id]["tags"][tag_num]
             old_key = ""
 
@@ -256,24 +272,26 @@ def main(args) -> None:
                     break
 
             # No change since last run, we don't need to output or save it
-            if old_key == protondb_rating:
+            if old_key == game_rating:
                 new_rank = False
             else:
-                print(f"{app_id} {old_key} => {protondb_rating} ({count} of {app_count})")
-        # If it throws a key error it is a new game to rank
-        except KeyError:
-            print(f"{app_id} {protondb_rating}")
+                print(f"{app_id} | {old_key} => {game_rating} ({count} of {app_count})")
+        else:
+            print(f"{app_id} | {game_rating} ({count} of {app_count})")
 
         if new_rank:
             # Try to inject the tag into the vdfDict, if the returned rating from ProtonDB isn't a
             # key in possible_ranks it will error out
-            if protondb_rating in possible_ranks:
-                apps[app_id]["tags"][tag_num] = possible_ranks[protondb_rating]
+            if game_rating in possible_ranks:
+                apps[app_id]["tags"][tag_num] = possible_ranks[game_rating]
             else:
-                print(f"Unknown ProtonDB rating: {protondb_rating}\n Please report this on GitHub!")
+                print(f"Unknown ProtonDB rating: {game_rating}\n Please report this on GitHub!")
 
         if count > 0 and count % 10 == 0:
             print(f"Processed ({count} of {app_count}) games...")
+            cache_manager.save_caches() # Save every once in awhile
+
+    cache_manager.save_caches()
 
     # True if -n or --no-save is passed
     if not args.no_save:

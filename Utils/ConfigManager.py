@@ -36,10 +36,11 @@ class ConfigManager:
             if "steam_id" in config:
                 return config["steam_id"]
         else:
-            print("Existing config not found.")
+            print("\nExisting config not found.")
             print(f"Config will be created here: {config_path}")
 
-        print("\nPlease go here to find your steamID64: https://steamid.io")
+        print("\nPlease go here to find your steamID64 (should look similar to " + \
+            "76561197960287930): https://www.steamidfinder.com")
 
         steam_id = input("steamID64: ")
 
@@ -63,7 +64,7 @@ class ConfigManager:
             if "steam_api_key" in config:
                 return config["steam_api_key"]
         else:
-            print("Existing config not found.")
+            print("\nExisting config not found.")
             print(f"Config will be created here: {config_path}")
 
         print("\nDue to recent changes in Steam, it has become more difficult to get an " + \
@@ -75,7 +76,7 @@ class ConfigManager:
         print("Please go here to generate an API key: https://steamcommunity.com/dev/apikey")
         print("\nThis API key will be saved in the config for ProtonDB-Tags on your PC.")
 
-        api_key = getpass("Api key: ")
+        api_key = getpass("Api key (not shown): ")
 
         config["steam_api_key"] = api_key
 
