@@ -100,7 +100,7 @@ class SharedconfigManager:
         '''Overwrites the sharedconfig file with the updated version and tells Steam to import it.\n
            Prompts the user before writing the file.'''
 
-        print("WARNING: This may clear your current tags on Steam!")
+        print("\nWARNING: This may clear your current tags on Steam!")
         check = input("Would you like to save sharedconfig.vdf? (y/N)")
         if check.lower() in ("yes", "y"):
             # Output the edited vdfDict back to the original location
@@ -108,10 +108,30 @@ class SharedconfigManager:
                 vdf.dump(sharedconfig_contents, sharedconfig_vdf, pretty=True)
 
             # Workaround provided by Valve for the new library
-            url = "steam://resetcollections"
+            resetcollections_url = "steam://resetcollections"
+            navlibrary_url = "steam://nav/library"
+            redirect = "1>/dev/null 2>&1 3>&1 4>&1 5>&1 6>&1 &"
+            command = None
+
+            # Windows (good to at least provide the option to folks)
             if sys.platform == "win32":
-                command = "start "
+                command = f"start {resetcollections_url}"
+            # Steam installed via Flatpak
+            elif "com.valvesoftware.Steam" in sharedconfig_path:
+                input("\nPlease close Steam, then press enter to continue...")
+                print("Re-launching Flatpak version of Steam...")
+
+                os.system(f"flatpak run com.valvesoftware.Steam {navlibrary_url} {redirect}")
+                command = f"flatpak run com.valvesoftware.Steam {resetcollections_url} {redirect}"
+            # Steam installed via system package manager
             else:
-                command = "steam "
-            input("Please launch Steam, then press Enter to continue...")
-            os.system(command + url) #Reset Collections
+                command = f"steam {resetcollections_url} {redirect}"
+
+            input("\nMake sure Steam is open, then press enter to continue...")
+
+            if not command:
+                print(f"Please open this URL in your browser: {resetcollections_url}")
+                sys.exit()
+
+            os.system(command)
+            print("Please click 'Confirm' in Steam, this will import the tags into your library.")
