@@ -57,6 +57,10 @@ def is_native(app_id: str, skip_cache: bool, cache_manager: CacheManager) -> boo
             is_native_game = linux_support in ["True", "true", True]
 
         cache_manager.add_to_steam_native_cache(app_id, is_native_game)
+    else:
+        # give a 1 day cooldown to reduce server load and speed when retrying after a long run
+        cache_manager.add_to_steam_native_cache(app_id, is_native_game, 1, 0)
+
     return is_native_game
 
 
@@ -174,6 +178,9 @@ def get_protondb_rating(app_id: str, skip_cache: bool, cache_manager: CacheManag
             protondb_ranking = protondb_data["trendingTier"]
 
         cache_manager.add_to_protondb_cache(app_id, protondb_ranking)
+    else:
+        # give a 1 day cooldown to reduce server load and speed when retrying after a long run
+        cache_manager.add_to_protondb_cache(app_id, protondb_ranking, 1, 0)
 
     return protondb_ranking
 
