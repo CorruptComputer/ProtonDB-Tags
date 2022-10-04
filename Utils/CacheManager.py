@@ -134,7 +134,7 @@ class CacheManager:
         # 604800 = seconds in 7 days
         app_cache["time_to_check"] = int(time.time()) + (86400 * days) \
             + random.randint(0, (86400 * offset))
-            
+
         app_cache["value"] = value
 
 
