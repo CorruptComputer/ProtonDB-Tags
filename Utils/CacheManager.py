@@ -92,7 +92,8 @@ class CacheManager:
         return (found_in_cache, value)
 
 
-    def add_to_steam_native_cache(self, app_id: str, value: bool, days:int = 7, offset:int = 7) -> None:
+    def add_to_steam_native_cache(self, app_id: str, value: bool, days:int = 7, offset:int = 7) \
+        -> None:
         '''Adds the specified value to the Steam native cache,
            sets expiration to (7 days + random value 0-7 days).'''
 
@@ -100,7 +101,9 @@ class CacheManager:
 
         # 86400 = seconds in 1 day
         # 604800 = seconds in 7 days
-        app_cache["time_to_check"] = int(time.time()) + (86400 * days) + random.randint(0, (86400 * offset))
+        app_cache["time_to_check"] = int(time.time()) + (86400 * days) \
+            + random.randint(0, (86400 * offset))
+
         app_cache["value"] = value
 
 
@@ -129,7 +132,9 @@ class CacheManager:
 
         # 86400 = seconds in 1 day
         # 604800 = seconds in 7 days
-        app_cache["time_to_check"] = int(time.time()) + (86400 * days) + random.randint(0, (86400 * offset))
+        app_cache["time_to_check"] = int(time.time()) + (86400 * days) \
+            + random.randint(0, (86400 * offset))
+            
         app_cache["value"] = value
 
 

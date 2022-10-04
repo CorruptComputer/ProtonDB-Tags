@@ -303,7 +303,8 @@ def main(args) -> None:
     cache_manager.save_caches()
     end_time = time.time() - start_time
 
-    print(f"Took {end_time} to process, average of {end_time / app_count} per game")
+    print(f"Took a total of {round(end_time, 2)} seconds to process, " + \
+        f"with an average of {round(end_time / app_count, 2)} seconds per game")
 
     # True if -n or --no-save is passed
     if not args.no_save:
