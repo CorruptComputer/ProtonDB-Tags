@@ -29,13 +29,17 @@ def is_native(app_id: str, skip_cache: bool, cache_manager: CacheManager) -> boo
     is_native_game = False
 
     try:
-        steam_response = requests.get(api_url, timeout=3)
+        steam_response = requests.get(
+            api_url,
+            timeout=3,
+            headers={"User-Agent": "https://github.com/CorruptComputer/ProtonDB-Tags"}
+        )
     except requests.Timeout:
         print(f"{app_id} | Timed out reading Steam store page.")
     except requests.ConnectionError:
-        print(f"{app_id} | Could not connect to ProtonDB")
-    except requests.RequestException:
-        print(f"{app_id} | An unknown error occoured when the request to ProtonDB")
+        print(f"{app_id} | Could not connect to Steam.")
+    except requests.RequestException as e:
+        print(f"{app_id} | An unknown error occoured with the request to Steam. {type(e).__name__}")
 
     # Wait 1.3 seconds before continuing, as Steam only allows 10 requests per 10 seconds,
     # otherwise you get rate limited for a few minutes.
@@ -107,7 +111,24 @@ def get_apps_list(sharedconfig: dict, fetch_games: bool) -> dict:
             "&include_free_sub=true" + \
             "&format=json"
 
-        get_owned_games_result = requests.get(api_url, timeout=3)
+        get_owned_games_result = None
+
+        try:
+            get_owned_games_result = requests.get(
+                api_url,
+                timeout=3,
+                headers={"User-Agent": "https://github.com/CorruptComputer/ProtonDB-Tags"}
+            )
+        except requests.Timeout:
+            print("Timed out reading apps list from Steam.")
+        except requests.ConnectionError:
+            print("Could not connect to Steam.")
+        except requests.RequestException as e:
+            print(f"An unknown error occoured with the request to Steam. {type(e).__name__}")
+
+        if not get_owned_games_result:
+            return apps_list
+
         if get_owned_games_result.status_code != 200:
             print("There was a problem retreiving your games list from the Steam API, " + \
                 f"status code was: {get_owned_games_result.status_code}")
@@ -164,13 +185,18 @@ def get_protondb_rating(app_id: str, skip_cache: bool, cache_manager: CacheManag
     protondb_ranking = "unrated"
 
     try:
-        protondb_response = requests.get(api_url, timeout=3)
+        protondb_response = requests.get(
+            api_url,
+            timeout=3,
+            headers={"User-Agent": "https://github.com/CorruptComputer/ProtonDB-Tags"}
+        )
     except requests.Timeout:
         print(f"{app_id} | Timed out reading the ranking from ProtonDB")
     except requests.ConnectionError:
-        print(f"{app_id} | Could not connect to ProtonDB")
-    except requests.RequestException:
-        print(f"{app_id} | An unknown error occoured when the request to ProtonDB")
+        print(f"{app_id} | Could not connect to ProtonDB.")
+    except requests.RequestException as e:
+        print(f"{app_id} | An unknown error occoured with the request to ProtonDB. " \
+            + f"{type(e).__name__}")
 
     if protondb_response:
         if protondb_response.status_code == 200:
@@ -233,6 +259,11 @@ def main(args) -> None:
     app_count = len(apps)
 
     print(f"\nFound a total of {app_count} Steam games.")
+
+    # Nothing found, just stop here since there is nothing to do.
+    if app_count == 0:
+        return
+
     start_time = time.time()
 
     for count, app_id in enumerate(apps, 1):
