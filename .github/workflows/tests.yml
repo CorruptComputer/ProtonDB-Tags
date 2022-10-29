@@ -29,7 +29,7 @@ jobs:
 
     - name: Run pylint
       run: |
-        pylint *.py **/*.py --disable=invalid-name,bare-except,too-many-branches,too-many-locals
+        pylint *.py **/*.py --disable=invalid-name,bare-except,too-many-branches,too-many-locals,too-many-statements
     
     - name: Run test cases
       run: |

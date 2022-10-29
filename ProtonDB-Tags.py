@@ -29,13 +29,17 @@ def is_native(app_id: str, skip_cache: bool, cache_manager: CacheManager) -> boo
     is_native_game = False
 
     try:
-        steam_response = requests.get(api_url)
+        steam_response = requests.get(
+            api_url,
+            timeout=3,
+            headers={"User-Agent": "https://github.com/CorruptComputer/ProtonDB-Tags"}
+        )
     except requests.Timeout:
         print(f"{app_id} | Timed out reading Steam store page.")
     except requests.ConnectionError:
-        print(f"{app_id} | Could not connect to ProtonDB")
-    except requests.RequestException:
-        print(f"{app_id} | An unknown error occoured when the request to ProtonDB")
+        print(f"{app_id} | Could not connect to Steam.")
+    except requests.RequestException as e:
+        print(f"{app_id} | An unknown error occoured with the request to Steam. {type(e).__name__}")
 
     # Wait 1.3 seconds before continuing, as Steam only allows 10 requests per 10 seconds,
     # otherwise you get rate limited for a few minutes.
@@ -57,6 +61,10 @@ def is_native(app_id: str, skip_cache: bool, cache_manager: CacheManager) -> boo
             is_native_game = linux_support in ["True", "true", True]
 
         cache_manager.add_to_steam_native_cache(app_id, is_native_game)
+    else:
+        # give a 1 day cooldown to reduce server load and speed when retrying after a long run
+        cache_manager.add_to_steam_native_cache(app_id, is_native_game, 1, 0)
+
     return is_native_game
 
 
@@ -103,7 +111,24 @@ def get_apps_list(sharedconfig: dict, fetch_games: bool) -> dict:
             "&include_free_sub=true" + \
             "&format=json"
 
-        get_owned_games_result = requests.get(api_url)
+        get_owned_games_result = None
+
+        try:
+            get_owned_games_result = requests.get(
+                api_url,
+                timeout=3,
+                headers={"User-Agent": "https://github.com/CorruptComputer/ProtonDB-Tags"}
+            )
+        except requests.Timeout:
+            print("Timed out reading apps list from Steam.")
+        except requests.ConnectionError:
+            print("Could not connect to Steam.")
+        except requests.RequestException as e:
+            print(f"An unknown error occoured with the request to Steam. {type(e).__name__}")
+
+        if not get_owned_games_result:
+            return apps_list
+
         if get_owned_games_result.status_code != 200:
             print("There was a problem retreiving your games list from the Steam API, " + \
                 f"status code was: {get_owned_games_result.status_code}")
@@ -160,13 +185,18 @@ def get_protondb_rating(app_id: str, skip_cache: bool, cache_manager: CacheManag
     protondb_ranking = "unrated"
 
     try:
-        protondb_response = requests.get(api_url)
+        protondb_response = requests.get(
+            api_url,
+            timeout=3,
+            headers={"User-Agent": "https://github.com/CorruptComputer/ProtonDB-Tags"}
+        )
     except requests.Timeout:
         print(f"{app_id} | Timed out reading the ranking from ProtonDB")
     except requests.ConnectionError:
-        print(f"{app_id} | Could not connect to ProtonDB")
-    except requests.RequestException:
-        print(f"{app_id} | An unknown error occoured when the request to ProtonDB")
+        print(f"{app_id} | Could not connect to ProtonDB.")
+    except requests.RequestException as e:
+        print(f"{app_id} | An unknown error occoured with the request to ProtonDB. " \
+            + f"{type(e).__name__}")
 
     if protondb_response:
         if protondb_response.status_code == 200:
@@ -174,6 +204,9 @@ def get_protondb_rating(app_id: str, skip_cache: bool, cache_manager: CacheManag
             protondb_ranking = protondb_data["trendingTier"]
 
         cache_manager.add_to_protondb_cache(app_id, protondb_ranking)
+    else:
+        # give a 1 day cooldown to reduce server load and speed when retrying after a long run
+        cache_manager.add_to_protondb_cache(app_id, protondb_ranking, 1, 0)
 
     return protondb_ranking
 
@@ -226,6 +259,13 @@ def main(args) -> None:
     app_count = len(apps)
 
     print(f"\nFound a total of {app_count} Steam games.")
+
+    # Nothing found, just stop here since there is nothing to do.
+    if app_count == 0:
+        return
+
+    start_time = time.time()
+
     for count, app_id in enumerate(apps, 1):
         # This has to be here because some Steam AppID's are strings of text,
         # which ProtonDB does not support. Check test01.vdf line 278 for an example.
@@ -292,6 +332,10 @@ def main(args) -> None:
             cache_manager.save_caches() # Save every once in awhile
 
     cache_manager.save_caches()
+    end_time = time.time() - start_time
+
+    print(f"Took a total of {round(end_time, 2)} seconds to process, " + \
+        f"with an average of {round(end_time / app_count, 2)} seconds per game")
 
     # True if -n or --no-save is passed
     if not args.no_save:

@@ -44,7 +44,7 @@ class CacheManager:
 
 
     def __init__(self):
-        '''Init'''
+        '''Init, loads or creates the cache if not found.'''
 
         self._base_cache_path = self._get_cache_path()
         self._steam_native_cache_path = os.path.join(self._base_cache_path, "steamNativeCache.json")
@@ -53,15 +53,23 @@ class CacheManager:
         self._protondb_cache = {}
 
         if os.path.exists(self._steam_native_cache_path):
-            with open(self._steam_native_cache_path, encoding="utf-8") as cache_json:
-                self._steam_native_cache = json.load(cache_json)
+            try:
+                with open(self._steam_native_cache_path, encoding="utf-8") as cache_json:
+                    self._steam_native_cache = json.load(cache_json)
+            except json.JSONDecodeError:
+                print("Error reading Steam native cache, creating a new one...")
+                self._steam_native_cache = {}
         else:
             print("\nSteam native cache not found.")
             print(f"This will be created here: {self._steam_native_cache_path}")
 
         if os.path.exists(self._protondb_cache_path):
-            with open(self._protondb_cache_path, encoding="utf-8") as cache_json:
-                self._protondb_cache = json.load(cache_json)
+            try:
+                with open(self._protondb_cache_path, encoding="utf-8") as cache_json:
+                    self._protondb_cache = json.load(cache_json)
+            except json.JSONDecodeError:
+                print("Error reading ProtonDB cache, creating a new one...")
+                self._protondb_cache = {}
         else:
             print("\nProtonDB cache not found.")
             print(f"This will be created here: {self._protondb_cache_path}")
@@ -84,15 +92,18 @@ class CacheManager:
         return (found_in_cache, value)
 
 
-    def add_to_steam_native_cache(self, app_id: str, value: bool) -> None:
+    def add_to_steam_native_cache(self, app_id: str, value: bool, days:int = 7, offset:int = 7) \
+        -> None:
         '''Adds the specified value to the Steam native cache,
-           sets expiration to (7 days + random value 1-7 days).'''
+           sets expiration to (7 days + random value 0-7 days).'''
 
         self._steam_native_cache[app_id] = app_cache = {}
 
         # 86400 = seconds in 1 day
         # 604800 = seconds in 7 days
-        app_cache["time_to_check"] = int(time.time()) + 604800 + random.randint(86400, 604800)
+        app_cache["time_to_check"] = int(time.time()) + (86400 * days) \
+            + random.randint(0, (86400 * offset))
+
         app_cache["value"] = value
 
 
@@ -113,15 +124,17 @@ class CacheManager:
         return (found_in_cache, value)
 
 
-    def add_to_protondb_cache(self, app_id: str, value: str) -> None:
+    def add_to_protondb_cache(self, app_id: str, value: str, days:int = 7, offset:int = 7) -> None:
         '''Adds the specified value to the ProtonDB cache,
-           sets expiration to (7 days + random value 1-7 days).'''
+           sets expiration to (7 days + random value 0-7 days).'''
 
         self._protondb_cache[app_id] = app_cache = {}
 
         # 86400 = seconds in 1 day
         # 604800 = seconds in 7 days
-        app_cache["time_to_check"] = int(time.time()) + 604800 + random.randint(86400, 604800)
+        app_cache["time_to_check"] = int(time.time()) + (86400 * days) \
+            + random.randint(0, (86400 * offset))
+
         app_cache["value"] = value
 
 
